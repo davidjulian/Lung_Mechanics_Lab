@@ -8,13 +8,14 @@ Teaching concept and instructional design: **David Julian**. Developed with assi
 
 ## Use the app
 
-Drag the large desired volume slider to inflate or deflate the lungs. The actual volume changes continuously according to the modeled pressure gradient and airway resistance. Pressure bars and six simultaneous graphs show the resulting relationships.
+Drag the large **Set volume** slider to inflate or deflate the lungs. The aligned **Actual volume** display changes continuously according to the modeled pressure gradient and airway resistance. Pressure bars and six simultaneous graphs show the resulting relationships. Volume controls, breathing actions, app controls, anatomy, and graphs are visually grouped for easier navigation.
 
 - **Mechanics settings** changes resistance, lung and chest wall compliance, hysteresis, and maximum muscle pressure. Its Reset restores baseline settings while preserving volume and recorded comparisons.
-- **Clear traces** removes recorded graph history. Volume trajectories and elastic balance traces otherwise accumulate across breaths and settings changes.
+- **Clear graphs** removes recorded graph history. Volume trajectories and elastic balance paths otherwise accumulate across breaths and settings changes.
 - **Restart** returns to baseline FRC, restores all mechanics, and clears traces.
-- **Expand** opens a larger view of any graph.
-- **About** credits the teaching design and development assistance.
+- The **expand icon** opens a larger view of any graph; its accessible label and tooltip name the graph.
+- **Anatomical view** selects Frontal or Lateral. Recoil arrows are always shown, with a legend for lung recoil, chest wall recoil, and airflow.
+- **About** includes © 2026 David Julian, development credits, and an explanation of the volume, recoil, pressure, flow, and hysteresis calculations.
 
 Hysteresis is Off by default for introductory experiments. The optional control introduces illustrative history dependent recoil, allowing comparisons between inflation and deflation at the same volume. Both Reset and Restart return hysteresis to Off. The app represents a conceptual model; its values are intended for teaching rather than clinical prediction. Extra expiratory resistance is fixed. Dynamic airway collapse and effort independent flow limitation are deferred.
 
