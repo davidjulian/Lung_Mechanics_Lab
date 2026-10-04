@@ -4,7 +4,7 @@ An interactive teaching app for exploring lung and chest wall mechanics, pressur
 
 Teaching concept and instructional design: **David Julian**. Developed with assistance from **Codex (OpenAI)**.
 
-**Open the app:** [Lung Mechanics Lab](https://lung-mechanics-lab.djulian.chatgpt.site)
+**Open the app:** [Lung Mechanics Lab](https://davidjulian.github.io/Lung_Mechanics_Lab)
 
 ## Use the app
 
@@ -37,6 +37,10 @@ python -m http.server 8000 --directory dist
 ```
 
 Then open `http://localhost:8000`. No account or server backend is required. D3 and the tooltip positioning library load from version pinned public CDNs. Settings are saved only in the visitor's browser; graph trajectories stay in memory.
+
+## Online publication
+
+GitHub Pages hosts the public app at `https://davidjulian.github.io/Lung_Mechanics_Lab`. The publication workflow rebuilds and deploys `dist` automatically when changes are pushed to `main`. Only the finished app is included in the deployed website.
 
 ## Verification
 
