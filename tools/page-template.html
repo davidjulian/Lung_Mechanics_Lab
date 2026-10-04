@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Experiment with lung mechanics, pressure relationships, airflow, airway resistance, compliance, and hysteresis.">
+  <meta name="author" content="David Julian">
+  <meta name="referrer" content="no-referrer">
+  <title>{{TITLE}}</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,{{ICON}}">
+  <style>
+{{STYLES}}
+    html > body {margin:0;padding:16px;max-width:1600px;box-sizing:border-box;margin-inline:auto}
+    .app-title {font-size:1.25rem;font-weight:500;margin:0 0 4px}
+  </style>
+  <script>
+    (() => {
+      const key='lung-mechanics-lab-state-v1';
+      let snapshot=null;
+      try{snapshot=JSON.parse(localStorage.getItem(key)||'null');}catch{}
+      window.openai={widgetState:snapshot,setWidgetState:async(next)=>{
+        window.openai.widgetState=next;
+        try{localStorage.setItem(key,JSON.stringify(next));}catch{}
+      }};
+    })();
+  </script>
+</head>
+<body>
+  <header><h1 class="app-title">{{TITLE}}</h1></header>
+  <main>
+{{APP}}
+  </main>
+{{RUNTIME}}
+</body>
+</html>

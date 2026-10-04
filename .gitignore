@@ -1,0 +1,8 @@
+.env
+.env.*
+!.env.example
+.sites-runtime/
+__pycache__/
+*.pyc
+*.tar.gz
+*.zip

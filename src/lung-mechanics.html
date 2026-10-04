@@ -1,0 +1,551 @@
+<div id="rib-diaphragm-sketch">
+  <div class="viz-row rd-heading"><span id="rd-state">Rest at FRC · no airflow</span></div>
+  <div class="rd-volume">
+    <div class="viz-row" style="justify-content:space-between"><label for="rd-volume">Desired lung volume · drag to inflate or deflate</label><output class="tabular-nums" id="rd-requested" for="rd-volume">Requested 2.50 L</output></div>
+    <input class="form-range" type="range" id="rd-volume" min="-1500" max="3500" step="1" value="0">
+    <div class="viz-row text-small text-muted" style="justify-content:space-between"><span>1.0 L</span><span>6.0 L</span></div>
+    <div id="rd-volume-track"></div>
+    <div class="viz-row text-small" style="justify-content:space-between"><span><span style="color:var(--viz-series-1)">●</span> Actual <output class="tabular-nums" id="rd-volume-value">2.50 L</output></span><span>│ Desired · ▲ FRC <output class="tabular-nums" id="rd-frc">2.50 L</output></span></div>
+  </div>
+
+  <div class="viz-controls rd-actions">
+    <button class="btn" id="rd-play" type="button">Play tidal breath</button>
+    <button class="btn" id="rd-play-deep" type="button">Play deep breath</button>
+    <button class="btn" id="rd-relax" type="button">Relax muscles</button>
+    <button class="btn" id="rd-settings-open" type="button">Mechanics settings</button>
+    <button class="btn" id="rd-restart" type="button" data-tooltip="Return to baseline FRC, restore mechanics, and clear all traces">Restart</button>
+    <button class="btn" id="rd-about-open" type="button">About</button>
+  </div>
+  <div class="rd-workspace">
+    <section class="rd-anatomy" aria-label="Lung anatomy and current pressures">
+      <div class="viz-row">
+        <label class="form-label" for="rd-anatomy-view" style="width:100px">Anatomy<select class="form-select" id="rd-anatomy-view"><option value="front">Front</option><option value="side">Side</option></select></label>
+        <label class="form-check"><input class="form-check-input" id="rd-recoil" type="checkbox" checked><span class="form-check-label">Recoil arrows</span></label>
+      </div>
+      <div class="rd-anatomy-pair">
+        <div class="rd-views">
+          <div class="rd-view" id="rd-front-panel"><div id="rd-front"></div></div>
+          <div class="rd-view" id="rd-side-panel" hidden><div id="rd-side"></div></div>
+        </div>
+        <div class="rd-pressure-display"><div class="text-small">Pressure · cm H₂O</div><div id="rd-pressure-bars"></div></div>
+      </div>
+      <div class="text-small rd-caption">① Alveolar · ② Intrapleural fluid<br>Pleural layers remain apposed</div>
+      <div class="viz-row rd-pressures text-small">
+        <span hidden>Alveolar <output class="tabular-nums" id="rd-palv">0.0</output></span>
+        <span hidden>Intrapleural <output class="tabular-nums" id="rd-ppl">−5.0</output></span>
+        <span>Across lung <output class="tabular-nums" id="rd-ptp">+5.0</output> cm H₂O</span>
+      </div>
+      <div class="viz-row rd-airflow-readout"><span>Airflow <output class="tabular-nums" id="rd-airflow">0.00 L/s</output></span></div>
+      <div class="text-small text-muted rd-caption">Illustrative mechanics · atmosphere = 0</div>
+    </section>
+    <section class="rd-graphs" id="rd-graphs" aria-label="Simultaneous teaching graphs">
+      <div class="viz-controls">
+        <button class="btn" type="button" id="rd-graph-pause" aria-pressed="false">Pause graphs</button>
+        <button class="btn" type="button" id="rd-graph-clear">Clear traces</button>
+      </div>
+      <div class="text-small" id="rd-graph-state" aria-live="polite">Live · loops kept until cleared</div>
+      <div id="rd-chart-area"></div>
+      <div class="tooltip rd-graph-tooltip" id="rd-graph-tooltip" role="tooltip" hidden></div>
+    </section>
+  </div>
+  <dialog id="rd-settings-dialog" aria-labelledby="rd-settings-title">
+    <div class="viz-row" style="justify-content:space-between"><h3 id="rd-settings-title">Mechanics settings</h3><div class="viz-row"><button class="btn" type="button" id="rd-settings-reset" data-tooltip="Restore baseline mechanics; keep lung volume and recorded traces">Reset</button><button class="btn" type="button" id="rd-settings-close">Close</button></div></div>
+  <div id="rd-mechanics" class="rd-settings-grid">
+
+  <div class="rd-volume">
+    <div class="viz-row" style="justify-content:space-between"><label for="rd-resistance">Airway resistance</label><output class="tabular-nums" id="rd-resistance-value" for="rd-resistance">3.5 cm H₂O·s/L</output></div>
+    <input class="form-range" type="range" id="rd-resistance" min="1" max="20" step="0.5" value="3.5">
+  </div>
+  <div class="rd-volume">
+    <div class="viz-row" style="justify-content:space-between"><label for="rd-exp-resistance">Extra expiratory resistance</label><output class="tabular-nums" id="rd-exp-resistance-value">0.0 cm H₂O·s/L</output></div>
+    <input class="form-range" type="range" id="rd-exp-resistance" min="0" max="40" step="0.5" value="0">
+  </div>
+  <div class="rd-volume">
+    <div class="viz-row" style="justify-content:space-between"><label for="rd-lung-compliance">Lung compliance</label><output class="tabular-nums" id="rd-lung-compliance-value">100%</output></div>
+    <input class="form-range" type="range" id="rd-lung-compliance" min="50" max="200" step="5" value="100">
+  </div>
+  <div class="rd-volume">
+    <div class="viz-row" style="justify-content:space-between"><label for="rd-chest-compliance">Chest wall compliance</label><output class="tabular-nums" id="rd-chest-compliance-value">100%</output></div>
+    <input class="form-range" type="range" id="rd-chest-compliance" min="50" max="200" step="5" value="100">
+  </div>
+  <div class="rd-volume">
+    <div class="viz-row" style="justify-content:space-between"><label for="rd-hysteresis">Lung hysteresis</label><output class="tabular-nums" id="rd-hysteresis-value">Up to ±10% recoil</output></div>
+    <input class="form-range" type="range" id="rd-hysteresis" min="0" max="40" step="1" value="10">
+    <button class="btn btn-ghost" type="button" id="rd-hysteresis-about">About these controls</button>
+  </div>
+  <div class="rd-volume">
+    <div class="viz-row" style="justify-content:space-between"><label for="rd-strength">Maximum muscle pressure</label><output class="tabular-nums" id="rd-strength-value" for="rd-strength">60 cm H₂O</output></div>
+    <input class="form-range" type="range" id="rd-strength" min="10" max="100" step="1" value="60">
+    <div class="text-small text-muted">Illustrative respiratory muscle pressure limit</div>
+    <div>Muscle effort <output class="tabular-nums" id="rd-effort-value">0.0 cm H₂O</output></div>
+  </div>
+  </div>
+
+  </dialog>
+  <dialog id="rd-app-about" aria-labelledby="rd-app-about-title">
+    <h3 id="rd-app-about-title">Lung Mechanics Lab</h3>
+    <p>Teaching concept and instructional design by <strong>David Julian</strong>.</p>
+    <p>Developed with assistance from <strong>Codex (OpenAI)</strong>.</p>
+    <button class="btn" type="button" id="rd-about-close">Close</button>
+  </dialog>
+  <dialog id="rd-model-about" aria-labelledby="rd-model-about-title">
+    <h3 id="rd-model-about-title">What these controls represent</h3>
+    <p><strong>Hysteresis:</strong> lung recoil depends on volume and recent inflation or deflation. Inflation tends toward a higher pressure curve; deflation tends toward a lower one. Direction changes are smooth, and holding still preserves the current pressure history.</p>
+    <p>This is an illustrative approximation of history dependent behavior associated with surfactant and opening or closing lung units. The setting controls the maximum pressure difference from the reference curve. It does not measure surfactant concentration or simulate individual lung units.</p>
+    <p>The baseline uses modest hysteresis: up to ±10% recoil modulation. This is a teaching default. Reset restores the mechanics controls while retaining current lung volume, pressure history, and recorded traces.</p>
+    <p><strong>Compliance:</strong> 100% is the baseline. Higher compliance reduces the magnitude of recoil pressure at a given volume; lower compliance increases it. The balance of lung and chest wall recoil determines FRC. With hysteresis enabled, that balance also depends on recent volume history.</p>
+    <p><strong>Expiratory obstruction:</strong> extra resistance applies only to outward airflow. It represents slower emptying. Pressure dependent airway collapse and effort independent flow limitation are omitted.</p>
+    <p>Use the <strong>Across lung pressure</strong> graph to see lung hysteresis. The alveolar pressure loop also reflects airway resistance. Volumes and control ranges are illustrative.</p>
+    <p><strong>Elastic balance:</strong> lung, chest wall, and combined recoil are traced at the volumes you visit. Earlier traces keep the mechanics present when they were recorded. Changing settings starts a separate trace; Clear traces removes the comparisons.</p>
+    <button class="btn" type="button" id="rd-model-close">Close</button>
+  </dialog>
+
+  <dialog id="rd-expanded" aria-label="Expanded teaching graph">
+    <div class="viz-row" style="justify-content:space-between"><span>Graph detail</span><button class="btn" type="button" id="rd-expanded-close">Close</button></div>
+    <div id="rd-expanded-chart"></div>
+    <div class="tooltip rd-graph-tooltip" id="rd-expanded-tooltip" role="tooltip" hidden></div>
+  </dialog>
+  <div class="sr-only" id="rd-announcement" aria-live="polite"></div>
+</div>
+<style>
+  #rib-diaphragm-sketch [hidden]{display:none}
+  #rib-diaphragm-sketch #rd-volume::-webkit-slider-thumb{width:26px;height:26px;margin-top:1px;background:var(--foreground);border:2px solid var(--background)}
+  #rib-diaphragm-sketch #rd-volume::-moz-range-thumb{width:26px;height:26px;background:var(--foreground);border:2px solid var(--background)}
+  #rib-diaphragm-sketch #rd-volume:focus-visible::-webkit-slider-thumb{border-color:var(--ring);box-shadow:inset 0 0 0 1px var(--ring)}
+  #rib-diaphragm-sketch #rd-volume:focus-visible::-moz-range-thumb{border-color:var(--ring);box-shadow:inset 0 0 0 1px var(--ring)}
+  #rib-diaphragm-sketch .rd-heading{padding-right:90px;min-height:32px}
+  #rib-diaphragm-sketch .rd-volume{margin:8px 0 10px}
+  #rib-diaphragm-sketch .rd-views{min-width:0}
+  #rib-diaphragm-sketch .rd-view{min-width:0}
+  #rib-diaphragm-sketch .rd-view-label{text-align:center;margin:6px 0}
+  #rib-diaphragm-sketch .rd-pressures{justify-content:center;gap:10px 16px;margin-top:4px}
+  #rib-diaphragm-sketch .rd-caption{text-align:center;margin-top:6px}
+  #rib-diaphragm-sketch svg text{fill:var(--foreground);font-size:var(--font-size-base);font-weight:400}
+  #rib-diaphragm-sketch .rd-body{fill:color-mix(in srgb,var(--muted) 60%,var(--background));stroke:var(--foreground);stroke-width:1.5}
+  #rib-diaphragm-sketch .rd-lung{fill:color-mix(in srgb,var(--viz-series-1) 16%,var(--background))}
+  #rib-diaphragm-sketch .rd-seam{fill:none;stroke:var(--viz-series-2);stroke-width:1.7}
+  #rib-diaphragm-sketch .rd-rib{fill:none;stroke:color-mix(in srgb,var(--foreground) 35%,var(--background));stroke-width:1.3}
+  #rib-diaphragm-sketch .rd-spine{fill:color-mix(in srgb,var(--foreground) 12%,var(--background));stroke:var(--foreground);stroke-width:1}
+  #rib-diaphragm-sketch .rd-diaphragm{fill:color-mix(in srgb,var(--foreground) 18%,var(--background));stroke:var(--foreground);stroke-width:1}
+  #rib-diaphragm-sketch .rd-airway{fill:var(--background);stroke:var(--viz-series-1);stroke-width:1.5}
+  #rib-diaphragm-sketch .rd-leader{fill:none;stroke:var(--muted-foreground);stroke-width:1}
+  #rib-diaphragm-sketch .rd-lung-recoil{fill:none;stroke:var(--viz-series-1);stroke-width:2}
+  #rib-diaphragm-sketch .rd-wall-recoil{fill:none;stroke:var(--viz-series-2);stroke-width:2}
+  #rib-diaphragm-sketch .rd-flow{fill:none;stroke:var(--foreground)}
+  #rib-diaphragm-sketch .rd-point{fill:var(--background);stroke:var(--foreground);stroke-width:1}
+  #rib-diaphragm-sketch .rd-airway-edge{fill:none;stroke:color-mix(in srgb,var(--foreground) 65%,var(--background));stroke-linecap:round;stroke-linejoin:round}
+  #rib-diaphragm-sketch .rd-airway-lumen{fill:none;stroke:var(--background);stroke-linecap:round;stroke-linejoin:round}
+  #rib-diaphragm-sketch .rd-cartilage{fill:none;stroke:color-mix(in srgb,var(--foreground) 25%,var(--background));stroke-width:1}
+  #rib-diaphragm-sketch .rd-graphs{position:relative;min-width:0}
+  #rib-diaphragm-sketch .rd-chart{min-width:0;margin-top:0}
+  #rib-diaphragm-sketch .rd-chart h3{margin:0}
+  #rib-diaphragm-sketch .rd-chart svg{display:block;width:100%;overflow:visible}
+  #rib-diaphragm-sketch .rd-chart svg text{fill:var(--foreground);font-size:12px}
+  #rib-diaphragm-sketch .rd-legend{display:flex;flex-wrap:wrap;gap:4px 10px;margin:2px 0;min-height:16px}
+  #rib-diaphragm-sketch .rd-legend button{display:inline-flex;align-items:center;gap:5px;border:0;background:transparent;color:var(--foreground);padding:0;font:inherit}
+  #rib-diaphragm-sketch .rd-legend svg{width:22px;height:12px;display:inline-block}
+  #rib-diaphragm-sketch .rd-legend button[aria-pressed="false"] svg{opacity:0.3}
+  #rib-diaphragm-sketch .rd-graph-tooltip{position:absolute;z-index:2;pointer-events:none;max-width:260px;background:var(--popover);color:var(--popover-foreground)}
+  #rib-diaphragm-sketch dialog{max-width:min(560px,calc(100% - 32px));max-height:85vh;overflow:auto;background:var(--popover);color:var(--popover-foreground);border:1px solid var(--border);padding:20px}
+  #rib-diaphragm-sketch dialog::backdrop{background:color-mix(in srgb,var(--foreground) 30%,transparent)}
+  #rib-diaphragm-sketch dialog p{margin:10px 0}
+  #rib-diaphragm-sketch .rd-workspace{display:grid;grid-template-columns:432px minmax(0,1fr);gap:16px;margin-top:8px;align-items:start}
+  #rib-diaphragm-sketch .rd-anatomy-pair{display:grid;grid-template-columns:minmax(280px,1fr) 144px;gap:8px;margin-top:8px}
+  #rib-diaphragm-sketch .rd-pressure-display{text-align:center}
+  #rib-diaphragm-sketch #rd-chart-area{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 10px;margin-top:4px}
+  #rib-diaphragm-sketch .rd-chart-heading{display:flex;align-items:center;justify-content:space-between;gap:4px}
+  #rib-diaphragm-sketch .rd-airflow-readout{justify-content:center;margin-top:8px}
+  #rib-diaphragm-sketch .rd-settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 20px}
+  #rib-diaphragm-sketch #rd-expanded{width:850px;max-width:calc(100% - 32px)}
+  #rib-diaphragm-sketch .rd-pressure-display svg{display:block;width:100%}
+  #rib-diaphragm-sketch .rd-pressure-display svg text{font-size:12px}
+  @container lung-app (min-width:1180px){#rib-diaphragm-sketch #rd-chart-area{grid-template-columns:repeat(3,minmax(0,1fr))}}
+  #rib-diaphragm-sketch{container-type:inline-size;container-name:lung-app}
+  @media(max-width:900px){#rib-diaphragm-sketch .rd-workspace{grid-template-columns:minmax(0,1fr)}#rib-diaphragm-sketch .rd-anatomy{width:432px;max-width:100%;justify-self:center}}
+  @media(max-width:480px){#rib-diaphragm-sketch #rd-chart-area{grid-template-columns:minmax(0,1fr)}#rib-diaphragm-sketch .rd-anatomy-pair{grid-template-columns:minmax(0,1fr)}#rib-diaphragm-sketch .rd-pressure-display{width:200px;justify-self:center}#rib-diaphragm-sketch .rd-settings-grid{grid-template-columns:minmax(0,1fr)}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+<script>
+(()=>{
+  const root=document.getElementById('rib-diaphragm-sketch');
+  const el=id=>root.querySelector(`#${id}`);
+  const slider=el('rd-volume'),resistance=el('rd-resistance'),strength=el('rd-strength'),settings=el('rd-mechanics'),track=el('rd-volume-track'),value=el('rd-volume-value'),play=el('rd-play'),deep=el('rd-play-deep'),recoil=el('rd-recoil');
+  const front=el('rd-front'),side=el('rd-side'),status=el('rd-state'),announce=el('rd-announcement');
+  const reduced=window.matchMedia('(prefers-reduced-motion: reduce)');
+  const MIN_VOLUME=-1500,MAX_VOLUME=3500;
+  const BASELINE={resistance:3.5,extraResistance:0,lungCompliance:1,chestCompliance:1,hysteresis:0.1,maxMuscle:60};
+  const lungControl=el('rd-lung-compliance'),chestControl=el('rd-chest-compliance'),extraResistance=el('rd-exp-resistance'),hysteresisControl=el('rd-hysteresis');
+  const s={...BASELINE,volume:0,target:0,flow:0,effort:0,effectiveResistance:3.5,memory:0,frc:0,limited:false,relaxing:false,recoil:true,anatomyView:'front',settings:true,running:false,elapsed:0,revision:0,amplitude:500,graphMode:'time',graphPaused:false,pressureQuantity:'palv'};
+  const signed=n=>Math.abs(n)<0.05?'0.0':`${n<0?'−':'+'}${Math.abs(n).toFixed(1)}`;
+  function restore(snapshot,initial=false){
+    const saved=snapshot?.privateContent;
+    if(!saved||!['continuous-lung-model-v6','lung-mechanics-controls-v7','lung-teaching-app-v8','lung-teaching-app-v9'].includes(saved.schema))return false;
+    if(!initial&&(!Number.isFinite(saved.revision)||saved.revision<=s.revision))return false;
+    if(Number.isFinite(saved.volume))s.volume=Math.max(MIN_VOLUME,Math.min(MAX_VOLUME,saved.volume));
+    s.target=Number.isFinite(saved.target)?Math.max(MIN_VOLUME,Math.min(MAX_VOLUME,saved.target)):s.volume;
+    if(Number.isFinite(saved.maxMuscle))s.maxMuscle=Math.max(10,Math.min(100,saved.maxMuscle));
+    if(Number.isFinite(saved.resistance))s.resistance=Math.max(1,Math.min(20,saved.resistance));
+    for(const [key,lo,hi] of [['extraResistance',0,40],['lungCompliance',0.5,2],['chestCompliance',0.5,2],['hysteresis',0,0.4],['memory',-1,1]])if(Number.isFinite(saved[key]))s[key]=Math.max(lo,Math.min(hi,saved[key]));
+    if(['front','side'].includes(saved.anatomyView))s.anatomyView=saved.anatomyView;
+    s.relaxing=saved.relaxing===true;updateFlow();
+    if(typeof saved.settings==='boolean')s.settings=saved.settings;
+    if(typeof saved.recoil==='boolean')s.recoil=saved.recoil;
+    if(['time','pressure','flow'].includes(saved.graphMode))s.graphMode=saved.graphMode;
+    if(typeof saved.graphPaused==='boolean')s.graphPaused=saved.graphPaused;
+    if(['palv','ppl','tp'].includes(saved.pressureQuantity))s.pressureQuantity=saved.pressureQuantity;
+    s.revision=Number.isFinite(saved.revision)?saved.revision:0;
+    return true;
+  }
+  restore(window.openai?.widgetState,true);
+
+  function save(){
+    s.revision=Math.max(Date.now(),s.revision+1);
+    window.openai?.setWidgetState?.({modelContent:{volumeAboveFrcMl:Math.round(s.volume-s.frc),lungVolumeL:2.5+s.volume/1000,frcL:2.5+s.frc/1000,requestedLungVolumeL:2.5+s.target/1000,muscleEffortCmH2O:s.effort,maximumMusclePressureCmH2O:s.maxMuscle,airwayResistanceCmH2OsPerL:s.resistance,extraExpiratoryResistanceCmH2OsPerL:s.extraResistance,lungComplianceRelativeToBaseline:s.lungCompliance,chestWallComplianceRelativeToBaseline:s.chestCompliance,illustrativeHysteresisFraction:s.hysteresis,recoilArrows:s.recoil,graphView:'comparison',graphsPaused:s.graphPaused},privateContent:{schema:'lung-teaching-app-v9',volume:s.volume,target:s.target,maxMuscle:s.maxMuscle,resistance:s.resistance,extraResistance:s.extraResistance,lungCompliance:s.lungCompliance,chestCompliance:s.chestCompliance,hysteresis:s.hysteresis,memory:s.memory,relaxing:s.relaxing,recoil:s.recoil,anatomyView:s.anatomyView,settings:s.settings,graphMode:s.graphMode,pressureQuantity:s.pressureQuantity,graphPaused:s.graphPaused,revision:s.revision}})?.catch(()=>{});
+  }
+  function stopCycle(){s.running=false;s.elapsed=0;}
+  function defs(prefix){return `<defs><marker id="${prefix}-lung" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M 0 0 L 7 4 L 0 8" fill="none" stroke="var(--viz-series-1)" stroke-width="1.5"/></marker><marker id="${prefix}-wall" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M 0 0 L 7 4 L 0 8" fill="none" stroke="var(--viz-series-2)" stroke-width="1.5"/></marker><marker id="${prefix}-flow" markerUnits="userSpaceOnUse" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M 0 0 L 6 3.5 L 0 7" fill="none" stroke="var(--foreground)" stroke-width="1.5"/></marker></defs>`;}
+  function lungRecoil(volume=s.volume,memory=s.memory){
+    const x=volume/1000;
+    // Extend the existing upper-volume curve below the original FRC while
+    // preserving its value and slope there and keeping lung recoil positive.
+    const reference=x<0?5*Math.exp(4.955357142857*x/5):5+4.955357142857*x+0.178571428571*x**3;
+    return reference/s.lungCompliance*(1+s.hysteresis*memory);
+  }
+  function chestRecoil(volume=s.volume){const x=volume/1000;return (5*(x/1.7-1)+1.2*Math.max(0,x-1.7)**3)/s.chestCompliance;}
+  function elasticLoad(volume,memory=s.memory){return lungRecoil(volume,memory)+chestRecoil(volume);}
+  function memoryAt(volume,from=s.volume,memory=s.memory){
+    const delta=(volume-from)/1000;if(delta===0||s.hysteresis===0)return memory;
+    // A bounded volume-history state approaches +1 on inflation and -1 on
+    // deflation over a 0.2 L excursion; it remains unchanged when flow stops.
+    const direction=Math.sign(delta);return direction+(memory-direction)*Math.exp(-Math.abs(delta)/0.2);
+  }
+  function equilibrium(effort,followHistory=false){
+    let lo=MIN_VOLUME,hi=MAX_VOLUME;
+    for(let i=0;i<35;i++){const mid=(lo+hi)/2,memory=followHistory?memoryAt(mid):s.memory;if(elasticLoad(mid,memory)<effort)lo=mid;else hi=mid;}
+    return (lo+hi)/2;
+  }
+  function mechanics(volume,memory=s.memory){
+    const required=elasticLoad(s.target,memory),effort=s.relaxing?0:Math.max(-s.maxMuscle,Math.min(s.maxMuscle,required));
+    const gradient=effort-elasticLoad(volume,memory),effectiveResistance=s.resistance+(gradient<0?s.extraResistance:0);
+    return {effort,effectiveResistance,flow:gradient/effectiveResistance,limited:!s.relaxing&&Math.abs(required)>s.maxMuscle+0.001};
+  }
+  function reachableVolume(){
+    if(s.relaxing)return equilibrium(0,true);
+    const required=elasticLoad(s.target);return Math.abs(required)<=s.maxMuscle?s.target:equilibrium(Math.sign(required)*s.maxMuscle,true);
+  }
+  function updateFlow(){Object.assign(s,mechanics(s.volume));s.frc=equilibrium(0,true);if(s.relaxing)s.target=s.frc;}
+  function airflowMark(prefix,xAt){
+    if(Math.abs(s.flow)<0.006)return '';
+    const ratio=Math.abs(s.flow)/(Math.abs(s.flow)+2),length=72*ratio;
+    const start=68+(s.flow>0?-1:1)*length/2,end=68+(s.flow>0?1:-1)*length/2;
+    let path='';for(let i=0;i<=8;i++){const y=start+(end-start)*i/8;path+=`${i?' L':'M'} ${xAt(y)} ${y}`;}
+    return `<path class="rd-flow" data-airflow-arrow="${prefix}" data-flow-length="${length}" stroke-width="${1.2+2.2*ratio}" marker-end="url(#${prefix}-flow)" d="${path}"/>`;
+  }
+  function airway(prefix,c,profile=false){
+    const trachea=profile?`M ${c} 12 L ${c} 84 Q ${c} 105 ${c-4} 120`:`M ${c} 12 L ${c} 118`;
+    const branches=profile?[`M ${c-4} 119 Q ${c+1} 132 ${c+20} 155`,`M ${c-4} 119 Q ${c+9} 128 ${c+31} 146`]:[`M ${c} 117 Q ${c-15} 135 ${c-39} 164`,`M ${c} 117 Q ${c+23} 135 ${c+57} 154`];
+    let pipes=`<path class="rd-airway-edge" data-trachea="${prefix}" stroke-width="20" d="${trachea}"/>`;
+    pipes+=branches.map(d=>`<path class="rd-airway-edge" stroke-width="13" d="${d}"/>`).join('');
+    pipes+=`<path class="rd-airway-lumen" stroke-width="16" d="${trachea}"/>`+branches.map(d=>`<path class="rd-airway-lumen" stroke-width="9" d="${d}"/>`).join('');
+    for(const y of [25,38,51,64,77,90,103]){const x=c-(profile&&y>84?4*((y-84)/36)**2:0);pipes+=`<path class="rd-cartilage" d="M ${x-8} ${y} Q ${x} ${y+3} ${x+8} ${y}"/>`;}
+    pipes+=airflowMark(prefix,y=>c-(profile&&y>84?4*((y-84)/36)**2:0));
+    return pipes;
+  }
+  function drawFront(u){
+    const w=Math.max(280,front.clientWidth),c=w/2,r=72+26*u,rise=46-38*u,base=278-6*u;
+    const dome=x=>base-rise*(1-(x/r)**2),inner=dome(14),control=base-rise*(r-14)/r;
+    const body=`M ${c-20} 22 L ${c-20} 52 Q ${c-45} 59 ${c-82-20*u} 83 Q ${c-r-22} 150 ${c-r-18} 268 L ${c-r-18} 307 Q ${c} 327 ${c+r+18} 307 L ${c+r+18} 268 Q ${c+r+22} 150 ${c+82+20*u} 83 Q ${c+45} 59 ${c+20} 52 L ${c+20} 22`;
+    const left=`M ${c-14} 96 C ${c-38} 78 ${c-r} 114 ${c-r} 165 L ${c-r} ${base} Q ${c-(r+14)/2} ${control} ${c-14} ${inner} L ${c-14} 176 Q ${c-28} 146 ${c-14} 127 Z`;
+    const right=`M ${c+14} 96 C ${c+38} 78 ${c+r} 114 ${c+r} 165 L ${c+r} ${base} Q ${c+(r+14)/2} ${control} ${c+14} ${inner} L ${c+14} 176 Q ${c+28} 146 ${c+14} 127 Z`;
+    const diaphragm=`M ${c-r} ${base} Q ${c} ${base-2*rise} ${c+r} ${base} L ${c+r} ${base+7} Q ${c} ${base-2*rise+7} ${c-r} ${base+7} Z`;
+    let ribs='';for(const y of [126,160,194,228]){for(const sign of [-1,1])ribs+=`<path class="rd-rib" d="M ${c+sign*16} ${y} Q ${c+sign*(48+10*u)} ${y+18-8*u} ${c+sign*(r+14)} ${y+12-16*u}"/>`;}
+    let arrows='';if(s.recoil){const lungLength=Math.min(36,18+16*(lungRecoil()-5)/25),cw=chestRecoil(),wallLength=Math.min(27,23*Math.abs(cw)/5);for(const sign of [-1,1]){arrows+=`<path class="rd-lung-recoil" marker-end="url(#rd-front-lung)" d="M ${c+sign*(r-5)} 184 L ${c+sign*(r-5-lungLength)} 184"/>`;if(Math.abs(cw)>0.12){const start=cw<0?r+15:r+31,end=cw<0?start+wallLength:start-wallLength;arrows+=`<path class="rd-wall-recoil" data-chest-recoil="${cw<0?'outward':'inward'}" marker-end="url(#rd-front-wall)" d="M ${c+sign*start} 184 L ${c+sign*end} 184"/>`;}}}
+    front.innerHTML=`<svg width="100%" height="336" viewBox="0 0 ${w} 336" role="img" aria-label="Front view: lung inflation from FRC to TLC, lateral rib cage expansion, and diaphragm flattening, without elongating the body frame.">${defs('rd-front')}<path class="rd-body" data-body-frame="front" d="${body}"/><path class="rd-diaphragm" data-diaphragm="front" data-dome-y="${dome(0)}" data-attachment-y="${base}" d="${diaphragm}"/><path class="rd-lung" d="${left}"/><path class="rd-lung" d="${right}"/>${ribs}<path class="rd-seam" d="${left}"/><path class="rd-seam" d="${right}"/>${airway('rd-front',c)}<text x="${c+22}" y="47">Trachea</text><circle class="rd-point" cx="${c-42}" cy="209" r="11"/><text x="${c-42}" y="214" text-anchor="middle">1</text><circle cx="${c+r}" cy="205" r="3.5" fill="var(--viz-series-2)"/><text x="${c+r+7}" y="210">2</text>${arrows}<path class="rd-leader" d="M ${c} ${dome(0)+4} L ${c} 306"/><text x="${c}" y="329" text-anchor="middle">Diaphragm</text></svg>`;
+  }
+  function drawSide(u){
+    const w=Math.max(280,side.clientWidth),back=w/2-57,angle=49-25*u,L=126;
+    const theta=angle*Math.PI/180,sternum=back+L*Math.cos(theta),lift=L*Math.sin(theta),rear=back+8,fore=sternum-7,mid=(rear+fore)/2,rise=46-38*u,base=278-6*u;
+    const body=`M ${back+54} 22 L ${back+54} 52 Q ${sternum+5} 68 ${sternum+13} 113 Q ${sternum+18} 172 ${sternum+11} 270 L ${sternum+11} 307 Q ${mid} 326 ${back-7} 307 L ${back-7} 79 Q ${back+20} 58 ${back+28} 53 L ${back+28} 22`;
+    const lung=`M ${rear} 105 C ${rear+16} 80 ${fore-10} 88 ${fore} 130 L ${fore} ${base} Q ${mid} ${base-2*rise} ${rear} ${base} Z`;
+    const diaphragm=`M ${rear} ${base} Q ${mid} ${base-2*rise} ${fore} ${base} L ${fore} ${base+7} Q ${mid} ${base-2*rise+7} ${rear} ${base+7} Z`;
+    let ribs='';for(const y of [80,110,140,170])ribs+=`<g data-rib-hinge="${back},${y}" transform="rotate(${angle} ${back} ${y})"><path class="rd-rib" data-rigid-rib="true" d="M ${back} ${y} C ${back+32} ${y-12} ${back+75} ${y-12} ${back+L} ${y}"/></g>`;
+    side.innerHTML=`<svg width="100%" height="336" viewBox="0 0 ${w} 336" role="img" aria-label="Side view: fixed posterior rib attachments, ribs rotating upward and forward, anterior sternum displacement, and diaphragm descent. The airway is projected into this view. The body frame keeps the same vertical extent.">${defs('rd-side')}<path class="rd-body" data-body-frame="side" d="${body}"/><path class="rd-diaphragm" data-diaphragm="side" data-dome-y="${base-rise}" data-attachment-y="${base}" d="${diaphragm}"/><path class="rd-lung" d="${lung}"/><path class="rd-seam" d="${lung}"/><rect class="rd-spine" x="${back-11}" y="80" width="10" height="199" rx="3"/>${ribs}<path class="rd-rib" data-sternum-x="${sternum}" d="M ${sternum} ${80+lift-5} L ${sternum} ${170+lift+7}"/>${airway('rd-side',back+40,true)}<text x="${back+62}" y="47">Trachea</text><path class="rd-leader" d="M ${mid} ${base-rise+4} L ${mid} 306"/><text x="${mid}" y="329" text-anchor="middle">Diaphragm</text><text x="${back-7}" y="303" text-anchor="end">Back</text><text x="${sternum+13}" y="303">Front</text></svg>`;
+  }
+  let pressureMin=-10,pressureMax=5;
+  function drawPressureBars(palv,ppl){
+    const host=el('rd-pressure-bars'),w=host.clientWidth||144,h=316,left=32,right=w-5,top=22,bottom=h-38;
+    pressureMin=Math.min(pressureMin,palv,ppl);pressureMax=Math.max(pressureMax,palv,ppl);
+    const lo=Math.floor(pressureMin/5)*5,hi=Math.ceil(pressureMax/5)*5;
+    const y=p=>top+(hi-p)*(bottom-top)/(hi-lo),zero=y(0),centers=[left+(right-left)*.28,left+(right-left)*.77];
+    const bars=[{name:'Alveolar',p:palv,c:3},{name:'Pleural',p:ppl,c:2}];
+    let marks=`<path d="M ${left} ${top} V ${bottom}" stroke="var(--border)" fill="none"/>`;
+    for(const p of (window.d3?d3.scaleLinear().domain([lo,hi]).ticks(5):[lo,0,hi]))marks+=`<text x="${left-6}" y="${y(p)+4}" text-anchor="end">${p.toFixed(0)}</text>`;
+    marks+=`<path data-pressure-zero d="M ${left} ${zero} H ${right}" stroke="var(--foreground)" stroke-width="1"/><text x="${left}" y="14">Atmosphere = 0</text>`;
+    bars.forEach((b,i)=>{const x=centers[i];marks+=`<rect data-pressure-bar="${b.name}" data-pressure-value="${b.p}" x="${x-13}" y="${Math.min(y(b.p),zero)}" width="26" height="${Math.abs(y(b.p)-zero)}" fill="var(--viz-series-${b.c})"/><path d="M ${x-13} ${y(b.p)} H ${x+13}" stroke="var(--viz-series-${b.c})" stroke-width="2"/><text x="${x}" y="${b.p>=0?Math.max(top+12,y(b.p)-6):Math.min(bottom-4,y(b.p)+16)}" text-anchor="middle">${signed(b.p)}</text><text x="${x}" y="${h-15}" text-anchor="middle">${b.name}</text>`;});
+    host.innerHTML=`<svg width="100%" height="${h}" viewBox="0 0 ${w} ${h}" role="img" aria-label="Alveolar pressure ${signed(palv)}, intrapleural pressure ${signed(ppl)} centimeters of water, relative to atmospheric zero. Both share the same vertical scale.">${marks}</svg>`;
+  }
+  function draw(){
+    el('rd-anatomy-view').value=s.anatomyView;el('rd-front-panel').hidden=s.anatomyView==='side';el('rd-side-panel').hidden=s.anatomyView!=='side';
+    const u=s.volume/3500;drawFront(u);drawSide(u);
+    slider.value=String(Math.round(s.target));el('rd-requested').value=`Requested ${(2.5+s.target/1000).toFixed(2)} L`;
+    el('rd-effort-value').value=`${Math.abs(s.effort).toFixed(1)} cm H₂O${s.effort>0.05?' · inspiratory':s.effort< -0.05?' · expiratory':''}`;
+    resistance.value=String(s.resistance);el('rd-resistance-value').value=`${s.resistance.toFixed(1)} cm H₂O·s/L`;
+    value.textContent=`${(2.5+s.volume/1000).toFixed(2)} L`;el('rd-frc').value=`${(2.5+s.frc/1000).toFixed(2)} L`;recoil.checked=s.recoil;
+    extraResistance.value=String(s.extraResistance);el('rd-exp-resistance-value').value=`${s.extraResistance.toFixed(1)} cm H₂O·s/L`;
+    lungControl.value=String(Math.round(s.lungCompliance*100));el('rd-lung-compliance-value').value=`${Math.round(s.lungCompliance*100)}%`;
+    chestControl.value=String(Math.round(s.chestCompliance*100));el('rd-chest-compliance-value').value=`${Math.round(s.chestCompliance*100)}%`;
+    hysteresisControl.value=String(Math.round(s.hysteresis*100));el('rd-hysteresis-value').value=s.hysteresis===0?'Off':`Up to ±${Math.round(s.hysteresis*100)}% recoil`;
+    strength.value=String(s.maxMuscle);el('rd-strength-value').value=`${s.maxMuscle} cm H₂O`;
+    const target=s.target,w=Math.max(280,track.clientWidth),x=v=>12+(w-24)*(v-MIN_VOLUME)/(MAX_VOLUME-MIN_VOLUME);
+    track.innerHTML=`<svg width="100%" height="24" viewBox="0 0 ${w} 24" role="img" aria-label="Actual lung volume ${(2.5+s.volume/1000).toFixed(2)} liters, desired volume ${(2.5+target/1000).toFixed(2)} liters, FRC ${(2.5+s.frc/1000).toFixed(2)} liters."><path d="M 12 12 H ${w-12}" fill="none" stroke="var(--border)" stroke-width="2"/><path data-target-marker="true" d="M ${x(target)} 3 V 20" stroke="var(--foreground)" stroke-width="1.5"/><path data-frc-marker="true" d="M ${x(s.frc)} 18 L ${x(s.frc)-4} 23 L ${x(s.frc)+4} 23 Z" fill="var(--foreground)"/><circle data-actual-marker="true" cx="${x(s.volume)}" cy="12" r="5" fill="var(--viz-series-1)"/></svg>`;
+    const tp=lungRecoil(),ppl=chestRecoil()-s.effort,p=ppl+tp;el('rd-palv').value=signed(p);el('rd-ppl').value=signed(ppl);el('rd-ptp').value=signed(tp);drawPressureBars(p,ppl);
+    el('rd-airflow').value=`${Math.abs(s.flow)<0.005?'0.00':`${s.flow<0?'−':'+'}${Math.abs(s.flow).toFixed(2)}`} L/s`;
+    const direction=s.flow>0.0003?'Inhaling':s.flow< -0.0003?'Exhaling':null;
+    status.textContent=direction?`${direction}${s.limited?' · muscle pressure limit':s.running?' · automatic breath':''}`:s.running?'Turning point · no airflow':s.limited?'Muscle pressure limit · target not reached':Math.abs(s.volume-s.frc)<1?'Rest at FRC · no airflow':'Held volume · no airflow';
+    for(const [button,amplitude,name] of [[play,500,'tidal'],[deep,3500,'deep']]){button.textContent=s.amplitude===amplitude&&s.running?'Hold requested volume':`Play ${name} breath`;}
+  }
+  const graphArea=el('rd-chart-area'),graphPause=el('rd-graph-pause'),graphTip=el('rd-graph-tooltip');
+  let graphTime=0,sampleAge=0,graphDrawAge=0,history=[],pressureHistory=[],charts=[],graphDirty=true,pinned=false,mechanicsRevision=0;
+  const disabledSeries=new Set();
+  const measure=(key,name,color,dash='')=>({key,name,color:`var(--viz-series-${color})`,dash});
+  const lungSeries=measure('tp','Lung',1),chestSeries=measure('cw','Chest wall',2),combinedSeries=measure('total','Combined',4);
+  const alveolarSeries=measure('palv','Alveolar',3),pleuralSeries=measure('ppl','Pleural',2),transpulmonarySeries=measure('tp','Across lung',1);
+  function graphSample(){const tp=lungRecoil(),cw=chestRecoil(),ppl=cw-s.effort;return {t:graphTime,v:2.5+s.volume/1000,target:2.5+s.target/1000,frc:2.5+s.frc/1000,flow:s.flow,tp,cw,total:tp+cw,ppl,palv:ppl+tp,mechanicsRevision};}
+  function captureGraph(force=false){
+    if(s.graphPaused)return;
+    if(!force&&sampleAge<0.05)return;
+    sampleAge=0;const point=graphSample();history.push(point);
+    // Pressure-volume loops persist until the student explicitly clears them.
+    // Omit identical held points, but retain every change in volume or pressure.
+    const previous=pressureHistory.at(-1);
+    // Settings changes start a new stroke, never a fictitious connecting line.
+    if(previous&&point.mechanicsRevision!==previous.mechanicsRevision)pressureHistory.push({break:true});
+    if(!previous||point.mechanicsRevision!==previous.mechanicsRevision||point.v!==previous.v||point.palv!==previous.palv||point.tp!==previous.tp||point.cw!==previous.cw||point.ppl!==previous.ppl||point.flow!==previous.flow)pressureHistory.push(point);
+    while(history.length>1&&history[1].t<graphTime-20)history.shift();
+    if(history.length>800)history.splice(0,history.length-800);
+    graphDirty=true;
+  }
+  history.push(graphSample());pressureHistory.push(history[0]);
+  // Graph sampling observes the existing physics; it never changes lung volume,
+  // pressure, airway flow, or the simulation clock used by the integrator.
+  let expandedChart=null,expandedPlaceholder=null,expandedTrigger=null;
+  function restoreExpanded(){
+    if(!expandedChart)return;
+    expandedPlaceholder.replaceWith(expandedChart.section);expandedChart.height=160;expandedChart.expand.hidden=false;
+    expandedChart=null;expandedPlaceholder=null;graphTip.hidden=true;el('rd-graphs').append(graphTip);
+    renderGraphs();expandedTrigger?.focus();expandedTrigger=null;
+  }
+  function expandGraph(chart,trigger){
+    if(expandedChart)restoreExpanded();
+    expandedChart=chart;expandedTrigger=trigger;chart.expand.hidden=true;expandedPlaceholder=document.createElement('div');
+    expandedPlaceholder.style.height=`${chart.section.offsetHeight}px`;chart.section.replaceWith(expandedPlaceholder);
+    el('rd-expanded-chart').append(chart.section);chart.height=Math.max(240,Math.min(440,window.innerHeight-180));
+    el('rd-expanded').showModal();renderGraphs();
+  }
+  el('rd-expanded-close').addEventListener('click',()=>el('rd-expanded').close());
+  el('rd-expanded').addEventListener('close',restoreExpanded);
+  new ResizeObserver(()=>{if(expandedChart)renderGraphs();}).observe(el('rd-expanded-chart'));
+  el('rd-anatomy-view').addEventListener('change',()=>{s.anatomyView=el('rd-anatomy-view').value;draw();save();});
+  function graphSpecs(){
+    return [
+      {id:'pressure-transpulmonary',title:'Across lung pressure',x:'v',xLabel:'Lung volume (L)',yLabel:'Across lung (cm H₂O)',height:160,zero:true,loop:true,persistent:true,series:[transpulmonarySeries]},
+      {id:'elastic',title:'Elastic balance · traced',x:'v',xLabel:'Lung volume (L)',yLabel:'Recoil (cm H₂O)',height:160,zero:true,elastic:true,loop:true,persistent:true,series:[lungSeries,chestSeries,combinedSeries]},
+      {id:'pressure-alveolar',title:'Alveolar pressure',x:'v',xLabel:'Lung volume (L)',yLabel:'Alveolar (cm H₂O)',height:160,zero:true,loop:true,persistent:true,series:[alveolarSeries]},
+      {id:'pressure-pleural',title:'Intrapleural pressure',x:'v',xLabel:'Lung volume (L)',yLabel:'Intrapleural (cm H₂O)',height:160,zero:true,loop:true,persistent:true,series:[pleuralSeries]},
+      {id:'flow-volume',title:'Lung function curve',x:'v',xLabel:'Lung volume (L)',yLabel:'Airflow (L/s)',height:160,zero:true,loop:true,persistent:true,series:[measure('flow','Inspiration positive',1)]},
+      {id:'pressure-time',title:'Pressures over time',x:'t',xLabel:'Time (s)',yLabel:'Pressure (cm H₂O)',height:160,zero:true,series:[alveolarSeries,pleuralSeries,transpulmonarySeries]}
+    ];
+  }
+  function buildGraphs(){
+    if(expandedChart)el('rd-expanded').close();restoreExpanded();graphTip.hidden=true;pinned=false;charts=[];graphArea.replaceChildren();
+    graphPause.textContent=s.graphPaused?'Resume graphs':'Pause graphs';graphPause.setAttribute('aria-pressed',String(s.graphPaused));
+    el('rd-graph-state').textContent=`${s.graphPaused?'Graphs paused · model running':'Live'} · loops kept until cleared`;
+    if(!window.d3){const error=document.createElement('div');error.textContent='Graph library unavailable. The lung model is still running.';error.setAttribute('role','alert');graphArea.append(error);return;}
+    for(const spec of graphSpecs()){
+      const section=document.createElement('section');section.className='rd-chart';section.dataset.chart=spec.id;
+      graphArea.append(section);
+      const heading=document.createElement('div');heading.className='rd-chart-heading';section.append(heading);const title=document.createElement('h3');title.className='text-small';title.textContent=spec.title;heading.append(title);const expand=document.createElement('button');expand.type='button';expand.className='btn btn-ghost';expand.textContent='Expand';expand.setAttribute('aria-label',`Expand ${spec.title}`);heading.append(expand);
+      const legend=document.createElement('div');legend.className='rd-legend text-small';legend.setAttribute('aria-label',`${spec.title} series`);section.append(legend);
+      for(const series of spec.series){
+        const button=document.createElement('button');button.type='button';button.className='cursor-interaction';button.dataset.series=series.key;button.setAttribute('aria-pressed',String(!disabledSeries.has(`${spec.id}:${series.key}`)));
+        button.innerHTML=`<svg viewBox="0 0 22 12" aria-hidden="true"><path d="M 1 6 H 21" fill="none" stroke="${series.color}" stroke-width="2" stroke-dasharray="${series.dash}"/></svg><span>${series.name}</span>`;
+        button.addEventListener('click',()=>{const key=`${spec.id}:${series.key}`;if(disabledSeries.has(key))disabledSeries.delete(key);else disabledSeries.add(key);button.setAttribute('aria-pressed',String(!disabledSeries.has(key)));graphDirty=true;renderGraphs();});legend.append(button);
+      }
+      const svg=d3.select(section).append('svg').attr('role','img').attr('aria-label',`${spec.title}. ${spec.xLabel} horizontally; ${spec.yLabel} vertically.`);
+      svg.append('title').text(spec.title);svg.append('desc').text(spec.elastic?'Lung, chest wall, and combined recoil recorded as lung volume changes. Prior traces retain their original mechanics until Clear traces is pressed. Settings changes start separate strokes. Combined recoil equals zero at an elastic resting balance.':spec.persistent?'Simulated volume trajectories retained until Clear traces is pressed. Repeated breaths accumulate. Across lung pressure shows illustrative elastic hysteresis; alveolar pressure reflects airway resistance. Inspiration has positive airflow.': 'Recent simulation pressure traces on a shared time scale.');
+      const frame=svg.append('rect').attr('data-chart-frame','').attr('fill','none').attr('stroke','var(--border)').attr('stroke-width',1);
+      const clipId=`rd-clip-${spec.id}`;svg.append('defs').append('clipPath').attr('id',clipId).append('rect');
+      const grid=svg.append('g').attr('stroke','var(--border)').attr('stroke-width',1);
+      const lines=svg.append('g').attr('clip-path',`url(#${clipId})`);
+      const xAxis=svg.append('g'),yAxis=svg.append('g');
+      const xTitle=svg.append('text').attr('class','axis-title').attr('data-axis','x').attr('text-anchor','middle').text(spec.xLabel);
+      const yTitle=svg.append('text').attr('class','axis-title').attr('data-axis','y').attr('text-anchor','middle').text(spec.yLabel);
+      const hover=svg.append('g').attr('pointer-events','none').attr('visibility','hidden');
+      hover.append('path').attr('data-chart-hover-guide','').attr('stroke','var(--foreground)').attr('stroke-width',1).attr('stroke-dasharray','2 3');
+      const overlay=svg.append('rect').attr('fill','transparent').attr('data-chart-hit','').attr('data-chart-hover-overlay',spec.series.length>1?'cross-series':'trajectory').attr('class','cursor-interaction');
+      const chart={...spec,section,svg,frame,grid,lines,xAxis,yAxis,xTitle,yTitle,hover,overlay,clipId};charts.push(chart);chart.expand=expand;expand.addEventListener('click',()=>expandGraph(chart,expand));
+      overlay.on('pointermove',event=>{chart.pointer={clientX:event.clientX,clientY:event.clientY};if(!pinned)showGraphTip(chart,event);}).on('pointerleave',()=>{chart.pointer=null;if(!pinned){graphTip.hidden=true;hover.attr('visibility','hidden');}}).on('click',event=>{pinned=!pinned;showGraphTip(chart,event);});
+    }
+    graphDirty=true;renderGraphs();
+  }
+  function paddedDomain(values,minSpan){
+    let [lo,hi]=d3.extent(values.filter(Number.isFinite));if(lo===undefined){lo=0;hi=0;}
+    if(hi-lo<minSpan){const mid=(lo+hi)/2;lo=mid-minSpan/2;hi=mid+minSpan/2;}
+    const pad=(hi-lo)*0.07;return [lo-pad,hi+pad];
+  }
+  function renderGraphs(){
+    if(!window.d3||!charts.length)return;
+    const latest=history.at(-1)||graphSample();
+    for(const chart of charts){
+      const w=chart.section.clientWidth,h=chart.height,left=64,right=w-16,top=14,bottom=h-44;
+      if(w<160)continue;
+      chart.svg.attr('width',w).attr('height',h).attr('viewBox',`0 0 ${w} ${h}`);
+      chart.frame.attr('x',left).attr('y',top).attr('width',right-left).attr('height',bottom-top);
+      chart.svg.select(`#${chart.clipId} rect`).attr('x',left).attr('y',top).attr('width',right-left).attr('height',bottom-top);
+      const data=chart.persistent?pressureHistory:history;
+      chart.data=data;chart.active=chart.series.filter(series=>!disabledSeries.has(`${chart.id}:${series.key}`));
+      const xd=chart.x==='t'?[Math.max(0,graphTime-20),Math.max(6,graphTime)]:paddedDomain(data.map(d=>d.v),0.25);
+      const pressureComparison=chart.persistent&&chart.id.startsWith('pressure-');
+      const yd=paddedDomain([...(pressureComparison?pressureHistory.flatMap(d=>[d.palv,d.ppl,d.tp]):data.flatMap(d=>chart.active.map(series=>d[series.key]))),...(chart.zero?[0]:[])],chart.yLabel.includes('Volume')?0.25:0.1);
+      const x=d3.scaleLinear().domain(xd).range([left+5,right-5]),y=d3.scaleLinear().domain(yd).nice(chart.elastic?6:4).range([bottom-5,top+5]);chart.xScale=x;chart.yScale=y;
+      chart.xAxis.attr('transform',`translate(0,${bottom})`).call(d3.axisBottom(x).ticks(w<400?3:6).tickFormat(d3.format('.2~f')).tickSizeOuter(0));
+      chart.yAxis.attr('transform',`translate(${left},0)`).call(d3.axisLeft(y).ticks(4).tickFormat(d3.format('.2~f')).tickSizeOuter(0));
+      chart.svg.selectAll('.domain').attr('stroke','var(--border)');chart.svg.selectAll('.tick line').attr('stroke','var(--border)');
+      chart.xTitle.attr('x',(left+right)/2).attr('y',h-7);
+      chart.yTitle.attr('transform',`translate(15,${(top+bottom)/2}) rotate(-90)`);
+      chart.grid.selectAll('line').data(chart.zero&&y.domain()[0]<=0&&y.domain()[1]>=0?[0]:[]).join('line').attr('x1',left).attr('x2',right).attr('y1',d=>y(d)).attr('y2',d=>y(d));
+      chart.lines.selectAll('path.rd-series').data(chart.active,d=>d.key).join('path').attr('class','rd-series').attr('data-series',d=>d.key).attr('fill','none').attr('stroke',d=>d.color).attr('stroke-width',1.8).attr('stroke-dasharray',d=>d.dash).attr('d',series=>d3.line().defined(d=>Number.isFinite(d[chart.x])&&Number.isFinite(d[series.key])).x(d=>x(d[chart.x])).y(d=>y(d[series.key]))(data));
+      chart.lines.selectAll('circle.rd-current').data(chart.active,d=>d.key).join('circle').attr('class','rd-current').attr('data-current-series',d=>d.key).attr('r',3.5).attr('fill',d=>d.color).attr('cx',x(latest[chart.x])).attr('cy',d=>y(latest[d.key]));
+      chart.overlay.attr('x',left).attr('y',top).attr('width',right-left).attr('height',bottom-top);
+      chart.bounds={left,right,top,bottom};
+      // Remove optional ticks if measured labels would overlap at this width.
+      const tickNodes=chart.xAxis.selectAll('.tick text').nodes();let previous=null;
+      for(const text of tickNodes){const box=text.getBoundingClientRect();if(previous&&box.left<previous.right+4)text.parentNode.remove();else previous=box;}
+      if(!pinned){if(chart.pointer)showGraphTip(chart,chart.pointer);else chart.hover.attr('visibility','hidden');}
+    }
+    graphDirty=false;
+  }
+  function interpolateSeries(data,key,xKey,x){
+    const i=d3.bisector(d=>d[xKey]).right(data,x),a=data[Math.max(0,i-1)],b=data[Math.min(data.length-1,i)];
+    if(!a||!b)return 0;const f=b[xKey]===a[xKey]?0:Math.max(0,Math.min(1,(x-a[xKey])/(b[xKey]-a[xKey])));return a[key]+f*(b[key]-a[key]);
+  }
+  function showGraphTip(chart,event){
+    if(!chart.data?.length||!chart.active.length)return;
+    const [mx,my]=d3.pointer(event,chart.svg.node()),x=chart.xScale.invert(Math.max(chart.bounds.left+5,Math.min(chart.bounds.right-5,mx)));
+    let values;
+    if(chart.loop){
+      const data=chart.data;let nearest={distance:Infinity};
+      for(let i=1;i<data.length;i++){const a=data[i-1],b=data[i];if(!Number.isFinite(a.v)||!Number.isFinite(b.v))continue;const dx=b.v-a.v;
+        for(const series of chart.active){let f;
+          if(Math.abs(dx)<1e-9){if(Math.abs(chart.xScale(a.v)-mx)>2)continue;const ya=chart.yScale(a[series.key]),yb=chart.yScale(b[series.key]);f=ya===yb?0:Math.max(0,Math.min(1,(my-ya)/(yb-ya)));}
+          else {f=(x-a.v)/dx;if(f<0||f>1)continue;}
+          const y=a[series.key]+f*(b[series.key]-a[series.key]),distance=Math.abs(chart.yScale(y)-my);if(distance<nearest.distance)nearest={distance,a,b,f};
+        }
+      }
+      if(!Number.isFinite(nearest.distance)){graphTip.hidden=true;chart.hover.attr('visibility','hidden');return;}
+      values=chart.active.map(series=>({...series,value:nearest.a[series.key]+nearest.f*(nearest.b[series.key]-nearest.a[series.key])}));
+    }else values=chart.active.map(series=>({...series,value:interpolateSeries(chart.data,series.key,chart.x,x)}));
+    chart.hover.attr('visibility','visible');chart.hover.select('[data-chart-hover-guide]').attr('d',`M ${chart.xScale(x)} ${chart.bounds.top} V ${chart.bounds.bottom}`);
+    chart.hover.selectAll('circle').data(values,d=>d.key).join('circle').attr('data-chart-hover-marker',d=>d.key).attr('cx',chart.xScale(x)).attr('cy',d=>chart.yScale(d.value)).attr('r',3.5).attr('fill',d=>d.color);
+    const unit=chart.yLabel.includes('cm')?'cm H₂O':chart.yLabel.includes('L/s')?'L/s':'L';
+    graphTip.replaceChildren();const heading=document.createElement('div');heading.textContent=`${chart.x==='t'?'Time':'Volume'} ${x.toFixed(2)} ${chart.x==='t'?'s':'L'}`;graphTip.append(heading);
+    for(const value of values){const row=document.createElement('div');row.textContent=`${value.name}: ${value.value.toFixed(2)} ${unit}`;graphTip.append(row);}
+    const tipRoot=expandedChart===chart?el('rd-expanded'):el('rd-graphs');const area=tipRoot.getBoundingClientRect();if(graphTip.parentElement!==tipRoot)tipRoot.append(graphTip);graphTip.hidden=false;
+    const tw=graphTip.getBoundingClientRect().width;graphTip.style.left=`${Math.max(0,Math.min(area.width-tw,event.clientX-area.left+12))}px`;graphTip.style.top=`${Math.max(0,event.clientY-area.top-graphTip.getBoundingClientRect().height-12)}px`;
+  }
+  graphPause.addEventListener('click',()=>{s.graphPaused=!s.graphPaused;buildGraphs();save();});
+  function clearGraphTraces(){history=[];pressureHistory=[];pressureMin=-10;pressureMax=5;graphTime=0;sampleAge=0;graphDrawAge=0;const point=graphSample();history.push(point);pressureHistory.push(point);graphDirty=true;pinned=false;graphTip.hidden=true;}
+  el('rd-graph-clear').addEventListener('click',()=>{clearGraphTraces();renderGraphs();draw();announce.textContent='Graph traces cleared. Lung model continues from its current volume.';});
+  const graphObserver=new ResizeObserver(()=>{graphDirty=true;renderGraphs();});graphObserver.observe(graphArea);
+  buildGraphs();
+  function desiredPose(t){
+    const peak=Math.min(MAX_VOLUME,s.baseline+s.amplitude),inhale=t<=2.5,duration=inhale?2.5:3.5,a=Math.PI*(inhale?t:t-2.5)/duration;
+    // A breath begun at rest returns toward its current resting balance. A
+    // breath begun at a muscle-supported volume returns to that held baseline.
+    const base=inhale||!s.endAtRest?s.baseline:s.frc;
+    return {target:base+(peak-base)*(inhale?1-Math.cos(a):1+Math.cos(a))/2};
+  }
+  function advance(dt){
+    const n=Math.max(1,Math.ceil(dt/0.004)),h=dt/n;
+    for(let i=0;i<n;i++){
+      if(s.running){s.elapsed=Math.min(6,s.elapsed+h);const pose=desiredPose(s.elapsed);s.target=pose.target;if(s.elapsed>=6){stopCycle();announce.textContent='Automatic breath complete. Airflow is settling.';}}
+      const v=s.volume,memory=s.memory,f=x=>1000*mechanics(x,memoryAt(x,v,memory)).flow,k1=f(v),k2=f(v+h*k1/2),k3=f(v+h*k2/2),k4=f(v+h*k3);
+      let next=v+h*(k1+2*k2+2*k3+k4)/6;
+      next=Math.max(MIN_VOLUME,Math.min(MAX_VOLUME,next));s.memory=memoryAt(next,v,memory);s.volume=next;
+    }
+    updateFlow();
+    if(!s.running){const eq=reachableVolume();if(Math.abs(s.volume-eq)<0.1&&Math.abs(s.flow*s.effectiveResistance)<0.005){s.memory=memoryAt(eq);s.volume=eq;updateFlow();return true;}}
+    return false;
+  }
+  function needsMotion(){return s.running||Math.abs(s.flow)>0.0003||Math.abs(s.volume-reachableVolume())>=0.1;}
+  // Physics runs on its own clock. Reduced motion changes only display cadence;
+  // neither that preference nor iframe visibility can suspend lung filling.
+  let lastTime=performance.now(),lastDraw=lastTime,wasMoving=needsMotion();
+  function tick(){
+    const now=performance.now(),dt=Math.max(0,Math.min(0.25,(now-lastTime)/1000));lastTime=now;
+    const active=needsMotion();if(active)advance(dt);
+    if(!s.graphPaused){graphTime+=dt;sampleAge+=dt;captureGraph();}
+    graphDrawAge+=dt;if(graphDirty&&graphDrawAge>=0.15){renderGraphs();graphDrawAge=0;}
+    if(!active)return;
+    const moving=needsMotion();
+    if(now-lastDraw>=(reduced.matches?100:33)||!moving){draw();lastDraw=now;}
+    if(wasMoving&&!moving){announce.textContent=`No airflow. Lung volume ${(2.5+s.volume/1000).toFixed(2)} liters.`;save();}
+    wasMoving=moving;
+  }
+  function queue(){wasMoving=needsMotion();captureGraph(true);}
+  function requestVolume(volume){stopCycle();s.relaxing=false;s.target=Math.max(MIN_VOLUME,Math.min(MAX_VOLUME,volume));updateFlow();draw();queue();}
+  function playBreath(amplitude){
+    if(s.running&&s.amplitude===amplitude){stopCycle();draw();save();return;}
+    s.baseline=s.volume;s.endAtRest=Math.abs(s.volume-s.frc)<1&&Math.abs(s.effort)<0.1;s.amplitude=amplitude;s.elapsed=0;s.running=true;s.relaxing=false;s.target=s.volume;updateFlow();draw();queue();
+  }
+  play.addEventListener('click',()=>playBreath(500));
+  deep.addEventListener('click',()=>playBreath(3500));
+  slider.addEventListener('input',()=>requestVolume(Number(slider.value)));
+  slider.addEventListener('change',()=>{announce.textContent=`Requested volume ${(2.5+s.target/1000).toFixed(2)} liters.`;save();});
+  resistance.addEventListener('input',()=>{if(s.resistance!==Number(resistance.value))mechanicsRevision++;s.resistance=Number(resistance.value);updateFlow();draw();queue();});
+  resistance.addEventListener('change',save);
+  strength.addEventListener('input',()=>{if(s.maxMuscle!==Number(strength.value))mechanicsRevision++;s.maxMuscle=Number(strength.value);updateFlow();draw();queue();});
+  strength.addEventListener('change',save);
+  for(const [control,key,scale] of [[extraResistance,'extraResistance',1],[lungControl,'lungCompliance',100],[chestControl,'chestCompliance',100],[hysteresisControl,'hysteresis',100]]){
+    control.addEventListener('input',()=>{if(s[key]!==Number(control.value)/scale)mechanicsRevision++;s[key]=Number(control.value)/scale;if(key==='hysteresis'&&s.hysteresis===0)s.memory=0;updateFlow();draw();queue();renderGraphs();});control.addEventListener('change',save);
+  }
+  el('rd-hysteresis-about').addEventListener('click',()=>el('rd-model-about').showModal());
+  el('rd-model-close').addEventListener('click',()=>el('rd-model-about').close());
+  el('rd-about-open').addEventListener('click',()=>el('rd-app-about').showModal());
+  el('rd-about-close').addEventListener('click',()=>el('rd-app-about').close());
+  el('rd-settings-open').addEventListener('click',()=>el('rd-settings-dialog').showModal());el('rd-settings-close').addEventListener('click',()=>el('rd-settings-dialog').close());
+  el('rd-settings-reset').addEventListener('click',()=>{if(Object.entries(BASELINE).some(([key,value])=>s[key]!==value))mechanicsRevision++;Object.assign(s,BASELINE);updateFlow();draw();queue();renderGraphs();announce.textContent='Baseline mechanics restored, including 10 percent illustrative hysteresis. Recorded comparisons retained.';save();});
+  el('rd-restart').addEventListener('click',()=>{
+    stopCycle();Object.assign(s,BASELINE,{volume:0,target:0,memory:0,relaxing:false,recoil:true,anatomyView:'front',graphPaused:false,amplitude:500,baseline:0,endAtRest:true});
+    mechanicsRevision++;disabledSeries.clear();updateFlow();clearGraphTraces();draw();buildGraphs();
+    lastTime=performance.now();lastDraw=lastTime;wasMoving=false;
+    announce.textContent='Restarted at baseline FRC. Mechanics restored, graphs cleared and recording, no airflow.';save();
+  });
+  el('rd-relax').addEventListener('click',()=>{stopCycle();s.relaxing=true;updateFlow();draw();queue();announce.textContent='Muscles relaxed. Elastic recoil moves the lungs toward the current resting balance.';save();});
+  recoil.addEventListener('change',()=>{s.recoil=recoil.checked;draw();save();});
+  window.addEventListener('openai:set_globals',event=>{if(restore(event.detail?.globals?.widgetState)){mechanicsRevision++;stopCycle();updateFlow();draw();queue();buildGraphs();}});
+  reduced.addEventListener('change',draw);
+  const observer=new ResizeObserver(draw);observer.observe(front);observer.observe(side);
+  draw();
+  const modelContext=document.modelContext;
+  if(modelContext?.registerTool){
+    const lifecycle=new AbortController();
+    window.addEventListener('pagehide',()=>lifecycle.abort(),{once:true});
+    try{
+      Promise.resolve(modelContext.registerTool({
+        name:'read_lung_mechanics',title:'Read current lung mechanics',
+        description:'Read the current simulated lung volume, airflow, pressures, and mechanics settings. Does not change the simulation.',
+        inputSchema:{type:'object',properties:{},additionalProperties:false},
+        annotations:{readOnlyHint:true,untrustedContentHint:false},
+        execute(input={}){
+          if(input===null||typeof input!=='object'||Array.isArray(input)||Object.keys(input).length)throw new TypeError('This read action accepts an empty object only.');
+          const tp=lungRecoil(),ppl=chestRecoil()-s.effort;
+          return {lungVolumeL:2.5+s.volume/1000,desiredVolumeL:2.5+s.target/1000,frcL:2.5+s.frc/1000,airflowIntoLungsLPerS:s.flow,alveolarPressureCmH2O:ppl+tp,intrapleuralPressureCmH2O:ppl,transpulmonaryPressureCmH2O:tp,mechanics:{...Object.fromEntries(Object.keys(BASELINE).map(key=>[key,s[key]]))}};
+        }
+      },{signal:lifecycle.signal})).catch(()=>{});
+    }catch{}
+  }
+  setInterval(tick,20);
+})();
+</script>
+
