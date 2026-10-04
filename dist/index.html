@@ -1271,7 +1271,6 @@ svg.lucide {
       <output class="rd-volume-number tabular-nums" id="rd-volume-value" aria-labelledby="rd-actual-label">2.50 L</output>
     </div>
     <div class="rd-volume-legend text-small" role="group" aria-label="Volume indicator legend">
-      <span class="rd-legend-label">Legend</span>
       <span><span class="rd-actual-symbol" aria-hidden="true">●</span> Actual volume</span>
       <span><span aria-hidden="true">│</span> Set volume</span>
       <span><span aria-hidden="true">▲</span> FRC <output class="tabular-nums" id="rd-frc">2.50 L</output></span>
@@ -1323,7 +1322,6 @@ svg.lucide {
           <button class="btn" type="button" id="rd-graph-clear">Clear graphs</button>
         </div>
       </div>
-      <div class="text-small" id="rd-graph-state" aria-live="polite">Live · loops kept until cleared</div>
       <div id="rd-chart-area"></div>
       <div class="tooltip rd-graph-tooltip" id="rd-graph-tooltip" role="tooltip" hidden></div>
     </section>
@@ -1417,7 +1415,6 @@ svg.lucide {
   #rib-diaphragm-sketch .rd-volume-legend{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:6px 24px;margin-top:4px}
   #rib-diaphragm-sketch .rd-volume-legend>span{white-space:nowrap}
   #rib-diaphragm-sketch .rd-actual-symbol{color:var(--viz-series-1)}
-  #rib-diaphragm-sketch .rd-legend-label{font-weight:600;color:color-mix(in srgb,var(--foreground) 65%,var(--background))}
   #rib-diaphragm-sketch .rd-actions{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px 24px}
   #rib-diaphragm-sketch .rd-action-group{display:flex;align-items:center;flex-wrap:wrap;gap:6px;padding:5px;background:var(--card);border:1px solid var(--border);border-radius:10px}
   #rib-diaphragm-sketch .rd-breath-actions{background:color-mix(in srgb,var(--accent) 50%,var(--background))}
@@ -1461,7 +1458,6 @@ svg.lucide {
   #rib-diaphragm-sketch .rd-chart h3{margin:0;font-weight:600}
   #rib-diaphragm-sketch .rd-expand-button{width:28px;height:28px;padding:4px;flex-shrink:0}
   #rib-diaphragm-sketch .rd-expand-button svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.7}
-  #rib-diaphragm-sketch #rd-graph-state{color:color-mix(in srgb,var(--foreground) 65%,var(--background));margin-top:6px}
   #rib-diaphragm-sketch .rd-chart svg{display:block;width:100%;overflow:visible}
   #rib-diaphragm-sketch .rd-chart svg text{fill:var(--foreground);font-size:12px}
   #rib-diaphragm-sketch .rd-legend{display:flex;flex-wrap:wrap;gap:4px 10px;margin:2px 0;min-height:16px}
@@ -1588,7 +1584,7 @@ svg.lucide {
     const diaphragm=`M ${c-r} ${base} Q ${c} ${base-2*rise} ${c+r} ${base} L ${c+r} ${base+7} Q ${c} ${base-2*rise+7} ${c-r} ${base+7} Z`;
     let ribs='';for(const y of [126,160,194,228]){for(const sign of [-1,1])ribs+=`<path class="rd-rib" d="M ${c+sign*16} ${y} Q ${c+sign*(48+10*u)} ${y+18-8*u} ${c+sign*(r+14)} ${y+12-16*u}"/>`;}
     let arrows='';const lungLength=Math.min(36,18+16*(lungRecoil()-5)/25),cw=chestRecoil(),wallLength=Math.min(27,23*Math.abs(cw)/5);for(const sign of [-1,1]){arrows+=`<path class="rd-lung-recoil" marker-end="url(#rd-front-lung)" d="M ${c+sign*(r-5)} 184 L ${c+sign*(r-5-lungLength)} 184"/>`;if(Math.abs(cw)>0.12){const start=cw<0?r+15:r+31,end=cw<0?start+wallLength:start-wallLength;arrows+=`<path class="rd-wall-recoil" data-chest-recoil="${cw<0?'outward':'inward'}" marker-end="url(#rd-front-wall)" d="M ${c+sign*start} 184 L ${c+sign*end} 184"/>`;}}
-    front.innerHTML=`<svg width="100%" height="336" viewBox="0 0 ${w} 336" role="img" aria-label="Frontal view: lung inflation from FRC to TLC, lateral rib cage expansion, and diaphragm flattening, without elongating the body frame.">${defs('rd-front')}<path class="rd-body" data-body-frame="front" d="${body}"/><path class="rd-diaphragm" data-diaphragm="front" data-dome-y="${dome(0)}" data-attachment-y="${base}" d="${diaphragm}"/><path class="rd-lung" d="${left}"/><path class="rd-lung" d="${right}"/>${ribs}<path class="rd-seam" d="${left}"/><path class="rd-seam" d="${right}"/>${airway('rd-front',c)}<text x="${c+22}" y="47">Trachea</text>${pressureLocations(c-42,209,c+r,205)}${arrows}<path class="rd-leader" d="M ${c} ${dome(0)+4} L ${c} 306"/><text x="${c}" y="329" text-anchor="middle">Diaphragm</text></svg>`;
+    front.innerHTML=`<svg width="100%" height="336" viewBox="0 0 ${w} 336" role="img" aria-label="Frontal view: lung inflation from FRC to TLC, lateral rib cage expansion, and diaphragm flattening, without elongating the body frame.">${defs('rd-front')}<path class="rd-body" data-body-frame="front" d="${body}"/><path class="rd-diaphragm" data-diaphragm="front" data-dome-y="${dome(0)}" data-attachment-y="${base}" d="${diaphragm}"/><path class="rd-lung" d="${left}"/><path class="rd-lung" d="${right}"/>${ribs}<path class="rd-seam" d="${left}"/><path class="rd-seam" d="${right}"/>${airway('rd-front',c)}${pressureLocations(c-42,209,c+r,205)}${arrows}</svg>`;
   }
   function drawSide(u){
     const w=Math.max(280,side.clientWidth),back=w/2-57,angle=49-25*u,L=126;
@@ -1599,7 +1595,7 @@ svg.lucide {
     let ribs='';for(const y of [80,110,140,170])ribs+=`<g data-rib-hinge="${back},${y}" transform="rotate(${angle} ${back} ${y})"><path class="rd-rib" data-rigid-rib="true" d="M ${back} ${y} C ${back+32} ${y-12} ${back+75} ${y-12} ${back+L} ${y}"/></g>`;
     const lungLength=Math.min((fore-rear)/2,18+16*(lungRecoil()-5)/25),cw=chestRecoil(),wallLength=Math.min(27,23*Math.abs(cw)/5),wallStart=fore+(cw<0?15:31),wallEnd=wallStart+(cw<0?wallLength:-wallLength);
     const arrows=`<path class="rd-lung-recoil" marker-end="url(#rd-side-lung)" d="M ${fore-5} 184 L ${fore-5-lungLength} 184"/>${Math.abs(cw)>0.12?`<path class="rd-wall-recoil" data-chest-recoil="${cw<0?'outward':'inward'}" marker-end="url(#rd-side-wall)" d="M ${wallStart} 184 L ${wallEnd} 184"/>`:''}`;
-    side.innerHTML=`<svg width="100%" height="336" viewBox="0 0 ${w} 336" role="img" aria-label="Lateral view: fixed posterior rib attachments, ribs rotating upward and forward, anterior sternum displacement, and diaphragm descent. The airway is projected into this view. The body frame keeps the same vertical extent.">${defs('rd-side')}<path class="rd-body" data-body-frame="side" d="${body}"/><path class="rd-diaphragm" data-diaphragm="side" data-dome-y="${base-rise}" data-attachment-y="${base}" d="${diaphragm}"/><path class="rd-lung" d="${lung}"/><path class="rd-seam" d="${lung}"/><rect class="rd-spine" x="${back-11}" y="80" width="10" height="199" rx="3"/>${ribs}<path class="rd-rib" data-sternum-x="${sternum}" d="M ${sternum} ${80+lift-5} L ${sternum} ${170+lift+7}"/>${airway('rd-side',back+40,true)}<text x="${back+62}" y="47">Trachea</text>${pressureLocations(mid,209,fore,220)}${arrows}<path class="rd-leader" d="M ${mid} ${base-rise+4} L ${mid} 306"/><text x="${mid}" y="329" text-anchor="middle">Diaphragm</text><text x="${back-7}" y="303" text-anchor="end">Back</text><text x="${sternum+13}" y="303">Front</text></svg>`;
+    side.innerHTML=`<svg width="100%" height="336" viewBox="0 0 ${w} 336" role="img" aria-label="Lateral view: fixed posterior rib attachments, ribs rotating upward and forward, anterior sternum displacement, and diaphragm descent. The airway is projected into this view. The body frame keeps the same vertical extent.">${defs('rd-side')}<path class="rd-body" data-body-frame="side" d="${body}"/><path class="rd-diaphragm" data-diaphragm="side" data-dome-y="${base-rise}" data-attachment-y="${base}" d="${diaphragm}"/><path class="rd-lung" d="${lung}"/><path class="rd-seam" d="${lung}"/><rect class="rd-spine" x="${back-11}" y="80" width="10" height="199" rx="3"/>${ribs}<path class="rd-rib" data-sternum-x="${sternum}" d="M ${sternum} ${80+lift-5} L ${sternum} ${170+lift+7}"/>${airway('rd-side',back+40,true)}${pressureLocations(mid,209,fore,220)}${arrows}<text x="${back-7}" y="303" text-anchor="end">Back</text><text x="${sternum+13}" y="303">Front</text></svg>`;
   }
   let pressureMin=-10,pressureMax=5;
   function drawPressureBars(palv,ppl){
@@ -1689,7 +1685,6 @@ svg.lucide {
   function buildGraphs(){
     if(expandedChart)el('rd-expanded').close();restoreExpanded();graphTip.hidden=true;pinned=false;charts=[];graphArea.replaceChildren();
     graphPause.textContent=s.graphPaused?'Resume graphs':'Pause graphs';graphPause.setAttribute('aria-pressed',String(s.graphPaused));
-    el('rd-graph-state').textContent=`${s.graphPaused?'Graphs paused · model running':'Live'} · loops kept until cleared`;
     if(!window.d3){const error=document.createElement('div');error.textContent='Graph library unavailable. The lung model is still running.';error.setAttribute('role','alert');graphArea.append(error);return;}
     for(const spec of graphSpecs()){
       const section=document.createElement('section');section.className='rd-chart';section.dataset.chart=spec.id;
