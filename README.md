@@ -16,7 +16,7 @@ Drag the large desired volume slider to inflate or deflate the lungs. The actual
 - **Expand** opens a larger view of any graph.
 - **About** credits the teaching design and development assistance.
 
-The baseline includes modest illustrative hysteresis: up to ±10% recoil modulation. The app represents a conceptual model; its values are intended for teaching rather than clinical prediction. Extra expiratory resistance is fixed. Dynamic airway collapse and effort independent flow limitation are deferred.
+Hysteresis is Off by default for introductory experiments. The optional control introduces illustrative history dependent recoil, allowing comparisons between inflation and deflation at the same volume. Both Reset and Restart return hysteresis to Off. The app represents a conceptual model; its values are intended for teaching rather than clinical prediction. Extra expiratory resistance is fixed. Dynamic airway collapse and effort independent flow limitation are deferred.
 
 ## Files and local development
 

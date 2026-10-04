@@ -1328,8 +1328,8 @@ svg.lucide {
     <input class="form-range" type="range" id="rd-chest-compliance" min="50" max="200" step="5" value="100">
   </div>
   <div class="rd-volume">
-    <div class="viz-row" style="justify-content:space-between"><label for="rd-hysteresis">Lung hysteresis</label><output class="tabular-nums" id="rd-hysteresis-value">Up to ±10% recoil</output></div>
-    <input class="form-range" type="range" id="rd-hysteresis" min="0" max="40" step="1" value="10">
+    <div class="viz-row" style="justify-content:space-between"><label for="rd-hysteresis">Lung hysteresis</label><output class="tabular-nums" id="rd-hysteresis-value">Off</output></div>
+    <input class="form-range" type="range" id="rd-hysteresis" min="0" max="40" step="1" value="0">
     <button class="btn btn-ghost" type="button" id="rd-hysteresis-about">About these controls</button>
   </div>
   <div class="rd-volume">
@@ -1351,7 +1351,7 @@ svg.lucide {
     <h3 id="rd-model-about-title">What these controls represent</h3>
     <p><strong>Hysteresis:</strong> lung recoil depends on volume and recent inflation or deflation. Inflation tends toward a higher pressure curve; deflation tends toward a lower one. Direction changes are smooth, and holding still preserves the current pressure history.</p>
     <p>This is an illustrative approximation of history dependent behavior associated with surfactant and opening or closing lung units. The setting controls the maximum pressure difference from the reference curve. It does not measure surfactant concentration or simulate individual lung units.</p>
-    <p>The baseline uses modest hysteresis: up to ±10% recoil modulation. This is a teaching default. Reset restores the mechanics controls while retaining current lung volume, pressure history, and recorded traces.</p>
+    <p>Hysteresis is Off by default for introductory experiments. Turn it on to explore how recent inflation and deflation change lung recoil. Reset restores the mechanics controls with hysteresis Off while retaining current lung volume and recorded traces.</p>
     <p><strong>Compliance:</strong> 100% is the baseline. Higher compliance reduces the magnitude of recoil pressure at a given volume; lower compliance increases it. The balance of lung and chest wall recoil determines FRC. With hysteresis enabled, that balance also depends on recent volume history.</p>
     <p><strong>Expiratory obstruction:</strong> extra resistance applies only to outward airflow. It represents slower emptying. Pressure dependent airway collapse and effort independent flow limitation are omitted.</p>
     <p>Use the <strong>Across lung pressure</strong> graph to see lung hysteresis. The alveolar pressure loop also reflects airway resistance. Volumes and control ranges are illustrative.</p>
@@ -1432,7 +1432,7 @@ svg.lucide {
   const front=el('rd-front'),side=el('rd-side'),status=el('rd-state'),announce=el('rd-announcement');
   const reduced=window.matchMedia('(prefers-reduced-motion: reduce)');
   const MIN_VOLUME=-1500,MAX_VOLUME=3500;
-  const BASELINE={resistance:3.5,extraResistance:0,lungCompliance:1,chestCompliance:1,hysteresis:0.1,maxMuscle:60};
+  const BASELINE={resistance:3.5,extraResistance:0,lungCompliance:1,chestCompliance:1,hysteresis:0,maxMuscle:60};
   const lungControl=el('rd-lung-compliance'),chestControl=el('rd-chest-compliance'),extraResistance=el('rd-exp-resistance'),hysteresisControl=el('rd-hysteresis');
   const s={...BASELINE,volume:0,target:0,flow:0,effort:0,effectiveResistance:3.5,memory:0,frc:0,limited:false,relaxing:false,recoil:true,anatomyView:'front',settings:true,running:false,elapsed:0,revision:0,amplitude:500,graphMode:'time',graphPaused:false,pressureQuantity:'palv'};
   const signed=n=>Math.abs(n)<0.05?'0.0':`${n<0?'−':'+'}${Math.abs(n).toFixed(1)}`;
@@ -1773,7 +1773,7 @@ svg.lucide {
   el('rd-about-open').addEventListener('click',()=>el('rd-app-about').showModal());
   el('rd-about-close').addEventListener('click',()=>el('rd-app-about').close());
   el('rd-settings-open').addEventListener('click',()=>el('rd-settings-dialog').showModal());el('rd-settings-close').addEventListener('click',()=>el('rd-settings-dialog').close());
-  el('rd-settings-reset').addEventListener('click',()=>{if(Object.entries(BASELINE).some(([key,value])=>s[key]!==value))mechanicsRevision++;Object.assign(s,BASELINE);updateFlow();draw();queue();renderGraphs();announce.textContent='Baseline mechanics restored, including 10 percent illustrative hysteresis. Recorded comparisons retained.';save();});
+  el('rd-settings-reset').addEventListener('click',()=>{if(Object.entries(BASELINE).some(([key,value])=>s[key]!==value))mechanicsRevision++;Object.assign(s,BASELINE);s.memory=0;updateFlow();draw();queue();renderGraphs();announce.textContent='Baseline mechanics restored with hysteresis Off. Recorded comparisons retained.';save();});
   el('rd-restart').addEventListener('click',()=>{
     stopCycle();Object.assign(s,BASELINE,{volume:0,target:0,memory:0,relaxing:false,recoil:true,anatomyView:'front',graphPaused:false,amplitude:500,baseline:0,endAtRest:true});
     mechanicsRevision++;disabledSeries.clear();updateFlow();clearGraphTraces();draw();buildGraphs();
