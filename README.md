@@ -4,7 +4,7 @@ An interactive teaching app for exploring lung and chest wall mechanics, pressur
 
 Teaching concept and instructional design: **David Julian**. Developed with assistance from **Codex (OpenAI)**.
 
-**Open the app:** [Lung Mechanics Lab](https://lung-mechanics-lab.violet-ash-2794.chatgpt.site)
+**Open the app:** [Lung Mechanics Lab](https://lung-mechanics-lab.djulian.chatgpt.site)
 
 ## Use the app
 
