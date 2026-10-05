@@ -1367,7 +1367,8 @@ svg.lucide {
     <p>Developed with assistance from <strong>Codex (OpenAI)</strong>.</p>
     <p class="rd-copyright">© 2026 David Julian</p>
     <h4>How the model works</h4>
-    <p><strong>Set and actual volume:</strong> the slider sets a target. The simulation continually calculates airflow. On each time step, change in actual volume = airflow × elapsed time. Positive flow adds air and negative flow removes it, so actual volume can lag behind the set volume. The Play buttons gradually increase inspiratory support, then release it over a brief transition. With Maintain breathing pattern off, a breath begun at rest finishes with zero muscle effort while elastic recoil drives expiration; increased resistance slows emptying. A breath begun at a held volume retains the muscle support needed to return to that held volume.</p>
+    <p><strong>Set and actual volume:</strong> the slider sets a target. The simulation continually calculates airflow. On each time step, change in actual volume = airflow × elapsed time. Positive flow adds air and negative flow removes it, so actual volume can lag behind the set volume. The Play buttons gradually increase inspiratory support, followed by a rapid initial drop and a slower decline in remaining effort. A breath begun at a held volume retains the muscle support needed to return to that held volume.</p>
+    <p><strong>Early expiration:</strong> some inspiratory muscle activity persists during quiet breathing, braking elastic recoil and slowing outward airflow. The Play breaths include this declining support; Relax muscles removes it immediately.</p>
     <p><strong>Elastic recoil and muscle effort:</strong> separate elastic curves describe inward lung recoil and chest wall recoil. Higher compliance reduces the magnitude of recoil pressure at a given volume. Chest wall recoil is negative when outward and positive when inward. Muscle effort is chosen to oppose the combined recoil at the set volume, up to the selected muscle pressure limit. Relax muscles sets effort to zero. The balance of the two elastic curves then determines the resting volume, or FRC.</p>
     <p><strong>Pressures:</strong> pressure across the lung equals its elastic recoil pressure. Intrapleural pressure equals chest wall recoil pressure minus signed muscle pressure (positive for inspiration, negative for active expiration). Alveolar pressure equals intrapleural pressure plus pressure across the lung. Pressures are relative to atmospheric pressure, defined as zero.</p>
     <p><strong>Airflow:</strong> flow into the lungs = (atmospheric pressure − alveolar pressure) ÷ airway resistance. Positive flow adds volume; negative flow removes it. The extra expiratory resistance setting increases resistance only during outward flow. When alveolar pressure returns to atmospheric pressure, airflow stops.</p>
@@ -1499,7 +1500,8 @@ svg.lucide {
   const reduced=window.matchMedia('(prefers-reduced-motion: reduce)');
   const MIN_VOLUME=-1500,MAX_VOLUME=3500;
   const BASELINE={resistance:3.5,extraResistance:0,lungCompliance:1,chestCompliance:1,hysteresis:0,maxMuscle:60,maintainPattern:false};
-  const EFFORT_REFERENCE=10,TRACKING_TIME=0.15,INSPIRATION_TIME=2.5,RELEASE_TIME=0.25,BREATH_TIME=6;
+  const EFFORT_REFERENCE=10,TRACKING_TIME=0.15,INSPIRATION_TIME=2.5,BREATH_TIME=6;
+  const FAST_RELEASE_TIME=0.1,BRAKING_TIME=0.85,BRAKING_DURATION=2.75,BRAKING_TAPER=0.5,FAST_RELEASE_SHARE=0.3;
   const lungControl=el('rd-lung-compliance'),chestControl=el('rd-chest-compliance'),extraResistance=el('rd-exp-resistance'),hysteresisControl=el('rd-hysteresis');
   const s={...BASELINE,volume:0,target:0,flow:0,effort:0,effectiveResistance:3.5,memory:0,frc:0,limited:false,relaxing:false,recoil:true,anatomyView:'front',settings:true,running:false,compensating:false,breathReleased:false,referenceVolume:0,referenceMemory:0,elapsed:0,revision:0,amplitude:500,graphMode:'time',graphPaused:false,pressureQuantity:'palv'};
   const signed=n=>Math.abs(n)<0.05?'0.0':`${n<0?'−':'+'}${Math.abs(n).toFixed(1)}`;
@@ -1550,12 +1552,28 @@ svg.lucide {
     for(let i=0;i<35;i++){const mid=(lo+hi)/2,memory=followHistory?memoryAt(mid,from,historyMemory):historyMemory;if(elasticLoad(mid,memory)<effort)lo=mid;else hi=mid;}
     return (lo+hi)/2;
   }
+  function releaseFraction(t){
+    if(t>=BRAKING_DURATION)return 0;
+    const fraction=FAST_RELEASE_SHARE*Math.exp(-t/FAST_RELEASE_TIME)+(1-FAST_RELEASE_SHARE)*Math.exp(-t/BRAKING_TIME);
+    // Smoothly finish the small residual support before expiration ends.
+    const taper=Math.max(0,Math.min(1,(BRAKING_DURATION-t)/BRAKING_TAPER));
+    return fraction*taper*taper*(3-2*taper);
+  }
+  function expiratorySupport(t,memory){
+    const clamp=p=>Math.max(-s.maxMuscle,Math.min(s.maxMuscle,p));
+    const peak=clamp(elasticLoad(Math.min(MAX_VOLUME,s.baseline+s.amplitude),memory));
+    const base=s.endAtRest?0:clamp(elasticLoad(s.baseline,memory));
+    return base+(peak-base)*releaseFraction(t);
+  }
+  function requestedMusclePressure(memory){
+    return s.running&&s.elapsed>INSPIRATION_TIME?expiratorySupport(s.elapsed-INSPIRATION_TIME,memory):elasticLoad(s.target,memory);
+  }
   function referenceFlow(volume=s.referenceVolume,memory=s.referenceMemory){
-    const effort=s.breathReleased&&s.endAtRest?0:Math.max(-s.maxMuscle,Math.min(s.maxMuscle,elasticLoad(s.target,memory)));
+    const effort=s.breathReleased&&s.endAtRest?0:Math.max(-s.maxMuscle,Math.min(s.maxMuscle,requestedMusclePressure(memory)));
     return (effort-elasticLoad(volume,memory))/BASELINE.resistance;
   }
   function mechanics(volume,memory=s.memory,referenceVolume=s.referenceVolume,referenceMemory=s.referenceMemory){
-    let required=elasticLoad(s.target,memory);
+    let required=requestedMusclePressure(memory);
     if(s.compensating&&!s.relaxing){
       const requestedFlow=referenceFlow(referenceVolume,referenceMemory)+(referenceVolume-volume)/1000/TRACKING_TIME;
       const resistance=s.resistance+(requestedFlow<0?s.extraResistance:0);
@@ -1803,22 +1821,22 @@ svg.lucide {
   const graphObserver=new ResizeObserver(()=>{graphDirty=true;renderGraphs();});graphObserver.observe(graphArea);
   buildGraphs();
   function desiredPose(t){
-    const peak=Math.min(MAX_VOLUME,s.baseline+s.amplitude),inhale=t<=INSPIRATION_TIME;
-    const a=Math.PI*Math.min(1,inhale?t/INSPIRATION_TIME:(t-INSPIRATION_TIME)/RELEASE_TIME);
+    const peak=Math.min(MAX_VOLUME,s.baseline+s.amplitude);
+    if(t<=INSPIRATION_TIME)return {target:s.baseline+(peak-s.baseline)*(1-Math.cos(Math.PI*t/INSPIRATION_TIME))/2};
     // A breath begun at rest returns toward its current resting balance. A
     // breath begun at a muscle-supported volume returns to that held baseline.
     const resting=s.compensating?equilibrium(0,true,s.referenceVolume,s.referenceMemory):s.frc;
-    const base=inhale||!s.endAtRest?s.baseline:resting;
-    return {target:base+(peak-base)*(inhale?1-Math.cos(a):1+Math.cos(a))/2};
+    const memory=s.compensating?s.referenceMemory:s.memory;
+    return {target:s.endAtRest&&t>=INSPIRATION_TIME+BRAKING_DURATION?resting:equilibrium(expiratorySupport(t-INSPIRATION_TIME,memory),false,s.volume,memory)};
   }
   function advance(dt){
     const n=Math.max(1,Math.ceil(dt/0.004)),h=dt/n;
     for(let i=0;i<n;i++){
       if(s.running){
         s.elapsed=Math.min(BREATH_TIME,s.elapsed+h);const pose=desiredPose(s.elapsed);s.target=pose.target;
-        s.breathReleased=s.elapsed>=INSPIRATION_TIME+RELEASE_TIME;
+        s.breathReleased=s.elapsed>=INSPIRATION_TIME+BRAKING_DURATION;
         // A resting baseline needs no muscle support after release. The
-        // compensated breath can recruit muscles to preserve passive-reference flow.
+        // compensated breath can recruit muscles to preserve the reference flow.
         if(s.breathReleased&&s.endAtRest&&!s.compensating)s.relaxing=true;
         if(s.elapsed>=BREATH_TIME){s.running=false;s.elapsed=0;announce.textContent='Automatic breath complete. Airflow is settling.';}
       }
