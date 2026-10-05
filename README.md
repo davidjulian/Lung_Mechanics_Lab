@@ -10,12 +10,18 @@ Teaching concept and instructional design: **David Julian**. Developed with assi
 
 Drag the large **Set volume** slider to inflate or deflate the lungs. The aligned **Actual volume** display changes continuously according to the modeled pressure gradient and airway resistance. Pressure bars and six simultaneous graphs show the resulting relationships. Volume controls, breathing actions, app controls, anatomy, and graphs are visually grouped for easier navigation.
 
+The six graphs are arranged in two rows on a laptop: Across lung pressure, Elastic balance, and Alveolar & intrapleural above Flow volume loop, Pressures over time, and Relative muscle effort. The combined pressure graph uses one scale for both pressures; its hover readout also gives their difference.
+
+**Relative muscle effort** is a continuous pressure-demand indicator: the magnitude of signed muscle pressure divided by a fixed reference pressure of 10 cm H₂O. It is zero at rest at FRC or after Relax muscles and remains elevated while holding a volume away from the elastic balance. Both inspiratory and expiratory muscle effort contribute. These relative units are not measured force, mechanical work, power, or metabolic energy expenditure. Its recent time window matches Pressures over time; it does not accumulate across trials.
+
+**Maintain breathing pattern** is off by default and applies only to the Play buttons. A reference breath uses baseline airway resistance (3.5 cm H₂O·s/L, no extra expiratory resistance), starting at the current volume with the current compliance, hysteresis, and muscle pressure limit. A controller adjusts muscle pressure to follow that reference volume and timing, including settling after the six-second request. Increased resistance raises the pressure demand; the selected pressure limit can prevent full compensation. Active expiration can be required. This preserves a baseline single-breath volume pattern, not alveolar ventilation or gas exchange. With compensation off, the original timed requests remain unchanged. Manual slider control remains unchanged in either mode. Reset and Restart turn compensation off.
+
 - **Mechanics settings** changes resistance, lung and chest wall compliance, hysteresis, and maximum muscle pressure. Its Reset restores baseline settings while preserving volume and recorded comparisons.
 - **Clear graphs** removes recorded graph history. Volume trajectories and elastic balance paths otherwise accumulate across breaths and settings changes.
 - **Restart** returns to baseline FRC, restores all mechanics, and clears traces.
 - The **expand icon** opens a larger view of any graph; its accessible label and tooltip name the graph.
 - **Anatomical view** selects Frontal or Lateral. Recoil arrows are always shown, with a legend for lung recoil, chest wall recoil, and airflow.
-- **About** includes © 2026 David Julian, development credits, and an explanation of the volume, recoil, pressure, flow, and hysteresis calculations.
+- **About** includes © 2026 David Julian, development credits, and an explanation of the volume, recoil, pressure, flow, hysteresis, relative effort, and breathing compensation calculations.
 
 Hysteresis is Off by default for introductory experiments. The optional control introduces illustrative history dependent recoil, allowing comparisons between inflation and deflation at the same volume. Both Reset and Restart return hysteresis to Off. The app represents a conceptual model; its values are intended for teaching rather than clinical prediction. Extra expiratory resistance is fixed. Dynamic airway collapse and effort independent flow limitation are deferred.
 
