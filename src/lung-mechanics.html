@@ -108,7 +108,7 @@
     <p>Developed with assistance from <strong>Codex (OpenAI)</strong>.</p>
     <p class="rd-copyright">© 2026 David Julian</p>
     <h4>How the model works</h4>
-    <p><strong>Set and actual volume:</strong> the slider sets a target. The simulation continually calculates airflow. On each time step, change in actual volume = airflow × elapsed time. Positive flow adds air and negative flow removes it, so actual volume can lag behind the set volume. The automatic breaths move the target through a timed cycle.</p>
+    <p><strong>Set and actual volume:</strong> the slider sets a target. The simulation continually calculates airflow. On each time step, change in actual volume = airflow × elapsed time. Positive flow adds air and negative flow removes it, so actual volume can lag behind the set volume. The Play buttons gradually increase inspiratory support, then release it over a brief transition. With Maintain breathing pattern off, a breath begun at rest finishes with zero muscle effort while elastic recoil drives expiration; increased resistance slows emptying. A breath begun at a held volume retains the muscle support needed to return to that held volume.</p>
     <p><strong>Elastic recoil and muscle effort:</strong> separate elastic curves describe inward lung recoil and chest wall recoil. Higher compliance reduces the magnitude of recoil pressure at a given volume. Chest wall recoil is negative when outward and positive when inward. Muscle effort is chosen to oppose the combined recoil at the set volume, up to the selected muscle pressure limit. Relax muscles sets effort to zero. The balance of the two elastic curves then determines the resting volume, or FRC.</p>
     <p><strong>Pressures:</strong> pressure across the lung equals its elastic recoil pressure. Intrapleural pressure equals chest wall recoil pressure minus signed muscle pressure (positive for inspiration, negative for active expiration). Alveolar pressure equals intrapleural pressure plus pressure across the lung. Pressures are relative to atmospheric pressure, defined as zero.</p>
     <p><strong>Airflow:</strong> flow into the lungs = (atmospheric pressure − alveolar pressure) ÷ airway resistance. Positive flow adds volume; negative flow removes it. The extra expiratory resistance setting increases resistance only during outward flow. When alveolar pressure returns to atmospheric pressure, airflow stops.</p>
@@ -240,9 +240,9 @@
   const reduced=window.matchMedia('(prefers-reduced-motion: reduce)');
   const MIN_VOLUME=-1500,MAX_VOLUME=3500;
   const BASELINE={resistance:3.5,extraResistance:0,lungCompliance:1,chestCompliance:1,hysteresis:0,maxMuscle:60,maintainPattern:false};
-  const EFFORT_REFERENCE=10,TRACKING_TIME=0.15;
+  const EFFORT_REFERENCE=10,TRACKING_TIME=0.15,INSPIRATION_TIME=2.5,RELEASE_TIME=0.25,BREATH_TIME=6;
   const lungControl=el('rd-lung-compliance'),chestControl=el('rd-chest-compliance'),extraResistance=el('rd-exp-resistance'),hysteresisControl=el('rd-hysteresis');
-  const s={...BASELINE,volume:0,target:0,flow:0,effort:0,effectiveResistance:3.5,memory:0,frc:0,limited:false,relaxing:false,recoil:true,anatomyView:'front',settings:true,running:false,compensating:false,referenceVolume:0,referenceMemory:0,elapsed:0,revision:0,amplitude:500,graphMode:'time',graphPaused:false,pressureQuantity:'palv'};
+  const s={...BASELINE,volume:0,target:0,flow:0,effort:0,effectiveResistance:3.5,memory:0,frc:0,limited:false,relaxing:false,recoil:true,anatomyView:'front',settings:true,running:false,compensating:false,breathReleased:false,referenceVolume:0,referenceMemory:0,elapsed:0,revision:0,amplitude:500,graphMode:'time',graphPaused:false,pressureQuantity:'palv'};
   const signed=n=>Math.abs(n)<0.05?'0.0':`${n<0?'−':'+'}${Math.abs(n).toFixed(1)}`;
   function restore(snapshot,initial=false){
     const saved=snapshot?.privateContent;
@@ -269,7 +269,7 @@
     s.revision=Math.max(Date.now(),s.revision+1);
     window.openai?.setWidgetState?.({modelContent:{volumeAboveFrcMl:Math.round(s.volume-s.frc),lungVolumeL:2.5+s.volume/1000,frcL:2.5+s.frc/1000,requestedLungVolumeL:2.5+s.target/1000,muscleEffortCmH2O:s.effort,relativeMuscleEffort:Math.abs(s.effort)/EFFORT_REFERENCE,maintainBreathingPattern:s.maintainPattern,maximumMusclePressureCmH2O:s.maxMuscle,airwayResistanceCmH2OsPerL:s.resistance,extraExpiratoryResistanceCmH2OsPerL:s.extraResistance,lungComplianceRelativeToBaseline:s.lungCompliance,chestWallComplianceRelativeToBaseline:s.chestCompliance,illustrativeHysteresisFraction:s.hysteresis,recoilArrows:s.recoil,graphView:'comparison',graphsPaused:s.graphPaused},privateContent:{schema:'lung-teaching-app-v9',volume:s.volume,target:s.target,maxMuscle:s.maxMuscle,resistance:s.resistance,extraResistance:s.extraResistance,lungCompliance:s.lungCompliance,chestCompliance:s.chestCompliance,hysteresis:s.hysteresis,maintainPattern:s.maintainPattern,memory:s.memory,relaxing:s.relaxing,recoil:s.recoil,anatomyView:s.anatomyView,settings:s.settings,graphMode:s.graphMode,pressureQuantity:s.pressureQuantity,graphPaused:s.graphPaused,revision:s.revision}})?.catch(()=>{});
   }
-  function stopCycle(){s.running=false;s.compensating=false;s.elapsed=0;}
+  function stopCycle(){s.running=false;s.compensating=false;s.breathReleased=false;s.elapsed=0;}
   function defs(prefix){return `<defs><marker id="${prefix}-lung" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M 0 0 L 7 4 L 0 8" fill="none" stroke="var(--viz-series-1)" stroke-width="1.5"/></marker><marker id="${prefix}-wall" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M 0 0 L 7 4 L 0 8" fill="none" stroke="var(--viz-series-2)" stroke-width="1.5"/></marker><marker id="${prefix}-flow" markerUnits="userSpaceOnUse" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M 0 0 L 6 3.5 L 0 7" fill="none" stroke="var(--foreground)" stroke-width="1.5"/></marker></defs>`;}
   function lungRecoil(volume=s.volume,memory=s.memory){
     const x=volume/1000;
@@ -292,7 +292,7 @@
     return (lo+hi)/2;
   }
   function referenceFlow(volume=s.referenceVolume,memory=s.referenceMemory){
-    const effort=Math.max(-s.maxMuscle,Math.min(s.maxMuscle,elasticLoad(s.target,memory)));
+    const effort=s.breathReleased&&s.endAtRest?0:Math.max(-s.maxMuscle,Math.min(s.maxMuscle,elasticLoad(s.target,memory)));
     return (effort-elasticLoad(volume,memory))/BASELINE.resistance;
   }
   function mechanics(volume,memory=s.memory,referenceVolume=s.referenceVolume,referenceMemory=s.referenceMemory){
@@ -385,7 +385,7 @@
     const tp=lungRecoil(),ppl=chestRecoil()-s.effort,p=ppl+tp;el('rd-palv').value=signed(p);el('rd-ppl').value=signed(ppl);el('rd-ptp').value=signed(tp);drawPressureBars(p,ppl);
     el('rd-airflow').value=`${Math.abs(s.flow)<0.005?'0.00':`${s.flow<0?'−':'+'}${Math.abs(s.flow).toFixed(2)}`} L/s`;
     const direction=s.flow>0.0003?'Inhaling':s.flow< -0.0003?'Exhaling':null;
-    status.textContent=direction?`${direction}${s.limited?' · muscle pressure limit':s.running?' · automatic breath':''}`:s.running?'Turning point · no airflow':s.limited?'Muscle pressure limit · target not reached':Math.abs(s.volume-s.frc)<1?'Rest at FRC · no airflow':'Held volume · no airflow';
+    status.textContent=direction?`${direction}${s.limited?' · muscle pressure limit':s.running?' · automatic breath':''}`:s.running&&!s.breathReleased?'Turning point · no airflow':s.limited?'Muscle pressure limit · target not reached':Math.abs(s.volume-s.frc)<1?'Rest at FRC · no airflow':'Held volume · no airflow';
     for(const [button,amplitude,name] of [[play,500,'tidal'],[deep,3500,'deep']]){button.textContent=s.amplitude===amplitude&&s.running?'Hold set volume':`Play ${name} breath`;}
   }
   const graphArea=el('rd-chart-area'),graphPause=el('rd-graph-pause'),graphTip=el('rd-graph-tooltip');
@@ -544,7 +544,8 @@
   const graphObserver=new ResizeObserver(()=>{graphDirty=true;renderGraphs();});graphObserver.observe(graphArea);
   buildGraphs();
   function desiredPose(t){
-    const peak=Math.min(MAX_VOLUME,s.baseline+s.amplitude),inhale=t<=2.5,duration=inhale?2.5:3.5,a=Math.PI*(inhale?t:t-2.5)/duration;
+    const peak=Math.min(MAX_VOLUME,s.baseline+s.amplitude),inhale=t<=INSPIRATION_TIME;
+    const a=Math.PI*Math.min(1,inhale?t/INSPIRATION_TIME:(t-INSPIRATION_TIME)/RELEASE_TIME);
     // A breath begun at rest returns toward its current resting balance. A
     // breath begun at a muscle-supported volume returns to that held baseline.
     const resting=s.compensating?equilibrium(0,true,s.referenceVolume,s.referenceMemory):s.frc;
@@ -554,7 +555,14 @@
   function advance(dt){
     const n=Math.max(1,Math.ceil(dt/0.004)),h=dt/n;
     for(let i=0;i<n;i++){
-      if(s.running){s.elapsed=Math.min(6,s.elapsed+h);const pose=desiredPose(s.elapsed);s.target=pose.target;if(s.elapsed>=6){s.running=false;s.elapsed=0;announce.textContent='Automatic breath complete. Airflow is settling.';}}
+      if(s.running){
+        s.elapsed=Math.min(BREATH_TIME,s.elapsed+h);const pose=desiredPose(s.elapsed);s.target=pose.target;
+        s.breathReleased=s.elapsed>=INSPIRATION_TIME+RELEASE_TIME;
+        // A resting baseline needs no muscle support after release. The
+        // compensated breath can recruit muscles to preserve passive-reference flow.
+        if(s.breathReleased&&s.endAtRest&&!s.compensating)s.relaxing=true;
+        if(s.elapsed>=BREATH_TIME){s.running=false;s.elapsed=0;announce.textContent='Automatic breath complete. Airflow is settling.';}
+      }
       const v=s.volume,memory=s.memory,r=s.referenceVolume,rm=s.referenceMemory;
       const at=(x,reference)=>({flow:1000*mechanics(x,memoryAt(x,v,memory),reference,memoryAt(reference,r,rm)).flow,reference:s.compensating?1000*referenceFlow(reference,memoryAt(reference,r,rm)):0});
       // Integrate the displayed lung and its baseline-resistance reference
@@ -565,7 +573,7 @@
       s.memory=memoryAt(next,v,memory);s.volume=next;
     }
     updateFlow();
-    if(!s.running){const eq=reachableVolume();if(Math.abs(s.volume-eq)<0.1&&Math.abs(s.flow*s.effectiveResistance)<0.005&&(!s.compensating||Math.abs(referenceFlow())<0.0003)){s.compensating=false;s.memory=memoryAt(eq);s.volume=eq;updateFlow();return true;}}
+    if(!s.running){const eq=reachableVolume();if(Math.abs(s.volume-eq)<0.1&&Math.abs(s.flow*s.effectiveResistance)<0.005&&(!s.compensating||Math.abs(referenceFlow())<0.0003)){if(s.compensating&&s.breathReleased&&s.endAtRest)s.relaxing=true;s.compensating=false;s.breathReleased=false;s.memory=memoryAt(eq);s.volume=eq;updateFlow();return true;}}
     return false;
   }
   function needsMotion(){return s.running||s.compensating||Math.abs(s.flow)>0.0003||Math.abs(s.volume-reachableVolume())>=0.1;}
@@ -587,14 +595,14 @@
   function requestVolume(volume){stopCycle();s.relaxing=false;s.target=Math.max(MIN_VOLUME,Math.min(MAX_VOLUME,volume));updateFlow();draw();queue();}
   function playBreath(amplitude){
     if(s.running&&s.amplitude===amplitude){stopCycle();updateFlow();draw();queue();save();return;}
-    s.baseline=s.volume;s.endAtRest=Math.abs(s.volume-s.frc)<1&&Math.abs(s.effort)<0.1;s.amplitude=amplitude;s.elapsed=0;s.running=true;s.relaxing=false;s.target=s.volume;s.referenceVolume=s.volume;s.referenceMemory=s.memory;s.compensating=s.maintainPattern;updateFlow();draw();queue();
+    s.baseline=s.volume;s.endAtRest=Math.abs(s.volume-s.frc)<1&&Math.abs(s.effort)<0.1;s.amplitude=amplitude;s.elapsed=0;s.running=true;s.breathReleased=false;s.relaxing=false;s.target=s.volume;s.referenceVolume=s.volume;s.referenceMemory=s.memory;s.compensating=s.maintainPattern;updateFlow();draw();queue();
   }
   play.addEventListener('click',()=>playBreath(500));
   deep.addEventListener('click',()=>playBreath(3500));
   el('rd-maintain-pattern').addEventListener('change',()=>{
     mechanicsRevision++;s.maintainPattern=el('rd-maintain-pattern').checked;
-    if(s.running&&s.maintainPattern){s.referenceVolume=s.volume;s.referenceMemory=s.memory;s.compensating=true;}
-    else if(!s.maintainPattern)s.compensating=false;
+    if(s.running&&s.maintainPattern){s.referenceVolume=s.volume;s.referenceMemory=s.memory;s.compensating=true;s.relaxing=false;}
+    else if(!s.maintainPattern){s.compensating=false;if(s.breathReleased&&s.endAtRest)s.relaxing=true;}
     updateFlow();draw();queue();save();
   });
   slider.addEventListener('input',()=>requestVolume(Number(slider.value)));
@@ -611,7 +619,7 @@
   el('rd-about-open').addEventListener('click',()=>el('rd-app-about').showModal());
   el('rd-about-close').addEventListener('click',()=>el('rd-app-about').close());
   el('rd-settings-open').addEventListener('click',()=>el('rd-settings-dialog').showModal());el('rd-settings-close').addEventListener('click',()=>el('rd-settings-dialog').close());
-  el('rd-settings-reset').addEventListener('click',()=>{if(Object.entries(BASELINE).some(([key,value])=>s[key]!==value))mechanicsRevision++;Object.assign(s,BASELINE);s.compensating=false;s.memory=0;s.referenceMemory=0;updateFlow();draw();queue();renderGraphs();announce.textContent='Baseline mechanics restored with hysteresis Off. Recorded graphs retained.';save();});
+  el('rd-settings-reset').addEventListener('click',()=>{if(Object.entries(BASELINE).some(([key,value])=>s[key]!==value))mechanicsRevision++;Object.assign(s,BASELINE);s.compensating=false;if(s.breathReleased&&s.endAtRest)s.relaxing=true;s.memory=0;s.referenceMemory=0;updateFlow();draw();queue();renderGraphs();announce.textContent='Baseline mechanics restored with hysteresis Off. Recorded graphs retained.';save();});
   el('rd-restart').addEventListener('click',()=>{
     stopCycle();Object.assign(s,BASELINE,{volume:0,target:0,memory:0,relaxing:false,recoil:true,anatomyView:'front',graphPaused:false,amplitude:500,baseline:0,endAtRest:true});
     mechanicsRevision++;disabledSeries.clear();updateFlow();clearGraphTraces();draw();buildGraphs();
